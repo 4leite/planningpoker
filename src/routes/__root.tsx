@@ -1,11 +1,11 @@
+import { TanStackDevtools } from "@tanstack/react-devtools"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { TanStackDevtools } from "@tanstack/react-devtools"
+
+import { AntiFOUC } from "#/components/AntiFOUC"
+import { Menu } from "#/components/layout/Menu"
 
 import appCss from "../styles.css?url"
-import { AntiFOUC } from "#/components/AntiFOUC"
-
-import { Menu } from "#/components/layout/Menu"
 
 export const Route = createRootRoute({
   head: () => ({

@@ -19,17 +19,14 @@ These decisions are still worth confirming before implementation starts.
 
 ### Realtime Details
 
-- Should the SSE route send an immediate snapshot on connect, or should the
-  client fetch first?
+- Should the SSE route send an immediate snapshot on connect, or should the client fetch first?
 - Is version-based stale event protection needed in v1, or only if bugs appear?
-- Is Pub/Sub sufficient, or is there a real requirement for replayable event
-  history later?
+- Is Pub/Sub sufficient, or is there a real requirement for replayable event history later?
 
 ### Deployment
 
 - Which Redis region should be used relative to the Vercel function region?
-- Will usage remain small enough that one SSE connection per active browser is
-  comfortable?
+- Will usage remain small enough that one SSE connection per active browser is comfortable?
 
 ## Recommended Answers For v1
 

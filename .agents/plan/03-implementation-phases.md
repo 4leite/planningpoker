@@ -2,8 +2,7 @@
 
 ## Summary
 
-This rebuild should be done in small phases that preserve a working application
-at each checkpoint.
+This rebuild should be done in small phases that preserve a working application at each checkpoint.
 
 ## Phase 0: Bootstrap TanStack Start
 
@@ -28,8 +27,7 @@ Create the new app shell and Vercel-compatible deployment setup.
 
 ### Goal
 
-Extract and stabilize the planning poker domain types and rules before wiring
-transport.
+Extract and stabilize the planning poker domain types and rules before wiring transport.
 
 ### Tasks
 
@@ -80,8 +78,7 @@ Move all room mutations behind typed server functions.
 
 ### Exit Criteria
 
-- the client can perform all room actions without raw route-handler mutation
-  code
+- the client can perform all room actions without raw route-handler mutation code
 - command validation lives server-side
 
 ## Phase 4: Snapshot Read Path
@@ -195,5 +192,4 @@ If this is implemented over several sessions, the most efficient order is:
 - adding Redis Streams before simple Pub/Sub has been validated
 - introducing auth or room permissions before the basic sync model is stable
 
-Continue to
-[04-open-questions-and-acceptance.md](./04-open-questions-and-acceptance.md).
+Continue to [04-open-questions-and-acceptance.md](./04-open-questions-and-acceptance.md).
