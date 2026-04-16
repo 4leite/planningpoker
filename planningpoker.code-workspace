@@ -6,25 +6,18 @@
   ],
   "settings": {
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
+      "source.fixAll.oxc": "always",
     },
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "editor.formatOnSave": true,
     "editor.tabSize": 2,
     "files.associations": {
       "*.css": "tailwindcss",
     },
     "files.eol": "\n",
-    "typescript.preferences.preferTypeOnlyAutoImports": true,
+    "typescript.preferences.preferTypeOnlyAutoImports": false,
     "typescript.tsdk": "node_modules/typescript/lib",
-    "eslint.validate": [
-      "javascript",
-      "javascriptreact",
-      "typescript",
-      "typescriptreact",
-    ],
-    "eslint.useFlatConfig": true,
-    "eslint.workingDirectories": [{ "mode": "auto" }],
-    "eslint.format.enable": true,
+    "oxc.fmt.configPath": "oxfmt.config.ts",
     "editor.quickSuggestions": {
       "strings": "on",
     },
@@ -34,7 +27,7 @@
     "editor.detectIndentation": false,
     "chat.agent.maxRequests": 50,
     "[json]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.defaultFormatter": "oxc.oxc-vscode",
     },
     "chat.useNestedAgentsMdFiles": true,
     "chat.tools.terminal.autoApprove": {

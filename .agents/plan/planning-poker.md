@@ -1,6 +1,13 @@
-# Planning Poker Rebuild Plan
+# Planning Poker Build Plan
 
-This planning set is ordered for progressive discovery. Read it top to bottom.
+This planning set reflects the agreed v1 product shape for the planning poker app in this repo.
+
+Read it top to bottom:
+
+- product and constraints
+- target architecture
+- implementation phases
+- decisions and acceptance
 
 ## Reading Order
 
