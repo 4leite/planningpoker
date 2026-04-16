@@ -1,8 +1,7 @@
 "use client"
 
 import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
-
-import { useMode } from "#/hooks/use-mode"
+import { Button } from "@tohuhono/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@tohuhono/ui/dropdown-menu"
-import { Button } from "@tohuhono/ui/button"
 import { cn } from "@tohuhono/utils"
+
+import { useMode } from "#/hooks/use-mode"
 
 export const ModeToggle = ({ className }: { className?: string }) => {
   const [mode, setMode] = useMode()
@@ -27,22 +27,13 @@ export const ModeToggle = ({ className }: { className?: string }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuItem
-            aria-selected={mode === "light"}
-            onClick={() => setMode("light")}
-          >
+          <DropdownMenuItem aria-selected={mode === "light"} onClick={() => setMode("light")}>
             Light
           </DropdownMenuItem>
-          <DropdownMenuItem
-            aria-selected={mode === "dark"}
-            onClick={() => setMode("dark")}
-          >
+          <DropdownMenuItem aria-selected={mode === "dark"} onClick={() => setMode("dark")}>
             Dark
           </DropdownMenuItem>
-          <DropdownMenuItem
-            aria-selected={mode === "system"}
-            onClick={() => setMode("system")}
-          >
+          <DropdownMenuItem aria-selected={mode === "system"} onClick={() => setMode("system")}>
             System
           </DropdownMenuItem>
         </DropdownMenuGroup>

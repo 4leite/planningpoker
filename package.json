@@ -10,13 +10,14 @@
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
+    "lint": "oxlint --fix .",
+    "lint:check": "oxlint .",
+    "tsc": "tsc --noEmit",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "validate": "pnpm lint:check && pnpm tsc && pnpm test && pnpm build && pnpm format:check",
     "prepare": "simple-git-hooks",
-    "prettier": "prettier --check \"**/*.{ts,tsx,js,jsx,css,md,mdx,json}\"",
-    "prettier:fix": "prettier -l --write \"**/*.{ts,tsx,js,jsx,css,md,mdx,json}\"",
-    "test": "vitest run"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm run prettier:fix"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -31,12 +32,9 @@
     "@tohuhono/ui": "^0.14.6",
     "@tohuhono/utils": "^0.14.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "typescript-eslint": "^8.58.2"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.5",
-    "@eslint/js": "^10.0.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@testing-library/dom": "^10.4.1",
@@ -44,19 +42,19 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@typescript-eslint/utils": "^8.58.2",
     "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.0",
-    "eslint-config-prettier": "^10.1.8",
     "globals": "^17.5.0",
     "jsdom": "^28.1.0",
     "nitro": "npm:nitro-nightly@3.0.1-20260415-080922-45e20aaa",
-    "prettier": "^3.8.3",
-    "prettier-plugin-tailwindcss": "^0.7.2",
+    "oxfmt": "^0.45.0",
+    "oxlint": "^1.60.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.7.2",
     "vite": "^8.0.0",
     "vitest": "^3.0.5"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm run format"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
