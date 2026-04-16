@@ -7,7 +7,7 @@ if [ "$VERCEL_ENV" == "production" ]; then
 fi
 
 # 2. Only build if it's a Pull Request AND targeting the 'develop' branch
-if [[ -n "$VERCEL_GIT_PULL_REQUEST_ID" && "$VERCEL_GIT_COMMIT_REF" == "develop" ]]; then
+if [[ "$VERCEL_GIT_COMMIT_REF" == "develop" ]]; then
   echo "✅ PR against develop detected. Proceeding with build."
   exit 1
 fi
