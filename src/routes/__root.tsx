@@ -40,11 +40,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AntiFOUC />
         <HeadContent />
       </head>
-      <body className="bg-background text-foreground min-h-svh w-full">
+      <body className="bg-background text-foreground mx-auto flex min-h-svh max-w-4xl flex-col">
         <AppQueryProvider>
           <MenuProvider>
             <Menu />
-            {children}
+            <main className="flex h-full w-full flex-1 flex-col items-center justify-center gap-2">
+              {children}
+            </main>
             <TanStackDevtools
               config={{
                 position: "bottom-right",

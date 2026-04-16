@@ -1,24 +1,18 @@
 import { createContext, useContext, useState } from "react"
 
-type RoomMenuState = {
-  roomLinkLabel: string
-  onCopyLink: () => void
-  spectatorChecked: boolean
-  spectatorDisabled: boolean
-  onSpectatorChange: (checked: boolean) => void
-  exitDisabled: boolean
-  onExit: () => void
-}
-
 const MenuContext = createContext<{
-  roomMenu: RoomMenuState | null
-  setRoomMenu: React.Dispatch<React.SetStateAction<RoomMenuState | null>>
+  roomMenuPortalElement: HTMLDivElement | null
+  setRoomMenuPortalElement: React.Dispatch<React.SetStateAction<HTMLDivElement | null>>
 } | null>(null)
 
 export const MenuProvider = ({ children }: { children: React.ReactNode }) => {
-  const [roomMenu, setRoomMenu] = useState<RoomMenuState | null>(null)
+  const [roomMenuPortalElement, setRoomMenuPortalElement] = useState<HTMLDivElement | null>(null)
 
-  return <MenuContext.Provider value={{ roomMenu, setRoomMenu }}>{children}</MenuContext.Provider>
+  return (
+    <MenuContext.Provider value={{ roomMenuPortalElement, setRoomMenuPortalElement }}>
+      {children}
+    </MenuContext.Provider>
+  )
 }
 
 export const useMenuState = () => {

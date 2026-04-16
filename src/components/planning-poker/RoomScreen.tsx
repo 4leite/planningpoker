@@ -1,9 +1,12 @@
+import { ExitIcon, Share1Icon } from "@radix-ui/react-icons"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { Button, buttonVariants } from "@tohuhono/ui/button"
 import { Card, CardContent } from "@tohuhono/ui/card"
+import { Switch } from "@tohuhono/ui/switch"
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 
 import { useMenuState } from "#/components/layout/MenuContext"
 import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
@@ -59,7 +62,7 @@ export const RoomScreen = ({
 }) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { setRoomMenu } = useMenuState()
+  const { roomMenuPortalElement } = useMenuState()
   const { identity, rememberDisplayName } = usePlanningPokerIdentity()
   const { room, setRoom } = useRoomRealtime({
     initialRoom,
@@ -74,27 +77,12 @@ export const RoomScreen = ({
   const resetRoundFn = useServerFn(resetRound)
   const [joinName, setJoinName] = useState(identity?.displayName ?? "")
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
-  const [copyMessage, setCopyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!joinName && identity?.displayName) {
       setJoinName(identity.displayName)
     }
   }, [identity?.displayName, joinName])
-
-  useEffect(() => {
-    if (!copyMessage) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      setCopyMessage(null)
-    }, 1800)
-
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [copyMessage])
 
   const currentMember = room?.members.find((member) => member.id === identity?.memberId) ?? null
   const voteProgress = room ? getVoteProgress(room) : null
@@ -229,12 +217,7 @@ export const RoomScreen = ({
   }
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopyMessage("Link copied")
-    } catch {
-      setCopyMessage("Clipboard unavailable")
-    }
+    await navigator.clipboard.writeText(window.location.href)
   }
 
   const handleExit = () => {
@@ -247,45 +230,19 @@ export const RoomScreen = ({
     leaveRoomMutation.mutate(undefined, {
       onSuccess: () => {
         queryClient.removeQueries({ queryKey: roomQueryKey(roomId) })
-        setRoomMenu(null)
         void navigate({ to: "/" })
       },
     })
   }
 
-  useEffect(() => {
-    if (!room) {
-      setRoomMenu(null)
-      return
-    }
-
-    setRoomMenu({
-      roomLinkLabel: copyMessage ?? room.roomId,
-      onCopyLink: () => {
-        void handleCopyLink()
-      },
-      spectatorChecked: currentMember?.role === "spectator",
-      spectatorDisabled: !currentMember || isPending,
-      onSpectatorChange: (checked) => handleRoleSwitch(checked ? "spectator" : "participant"),
-      exitDisabled: isPending,
-      onExit: handleExit,
-    })
-
-    return () => {
-      setRoomMenu(null)
-    }
-  }, [copyMessage, currentMember, isPending, room, setRoomMenu])
-
   if (!room) {
     return (
-      <main className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-3xl items-center justify-center px-4 py-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <p className="text-muted-foreground text-sm">room not found</p>
-          <Link to="/" className={buttonVariants()}>
-            back
-          </Link>
-        </div>
-      </main>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <p className="text-muted-foreground text-sm">room not found</p>
+        <Link to="/" className={buttonVariants()}>
+          back
+        </Link>
+      </div>
     )
   }
 
@@ -296,10 +253,52 @@ export const RoomScreen = ({
     : `${voteProgress?.readyCount ?? 0} / ${voteProgress?.participantCount ?? 0}`
 
   return (
-    <main className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-6xl flex-col items-center justify-center gap-6 px-4 py-6">
+    <>
+      {roomMenuPortalElement
+        ? createPortal(
+            <div className="grid grid-cols-[1fr_auto] items-center justify-items-start gap-3">
+              <div className="flex items-center gap-2">
+                <Button type="button" onClick={handleCopyLink} variant="ghost" size="icon">
+                  <Share1Icon />
+                </Button>
+                <Link to={window.location.href}>{room.roomId}</Link>
+              </div>
+
+              <div className="flex gap-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <span>spectator</span>
+                  <Switch
+                    checked={currentMember?.role === "spectator"}
+                    disabled={!currentMember || isPending}
+                    onCheckedChange={(checked) =>
+                      handleRoleSwitch(checked ? "spectator" : "participant")
+                    }
+                  />
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={handleExit}
+                  aria-label="Exit room"
+                >
+                  <ExitIcon />
+                </Button>
+              </div>
+            </div>,
+            roomMenuPortalElement,
+          )
+        : null}
+
+      <VoteDeck
+        selectedVote={currentMember?.vote ?? null}
+        disabled={currentMember?.role !== "participant" || room.revealed}
+        isPending={isPending}
+        onVote={handleVote}
+      />
       <Card className="w-full max-w-5xl">
         <CardContent className="p-4 sm:p-6">
-          <div className="bg-muted/20 relative mx-auto aspect-16/10 w-full max-w-4xl rounded-[999px] border sm:aspect-video">
+          <div className="bg-muted/20 relative mx-auto aspect-video w-full max-w-4xl rounded-[999px] border sm:aspect-video">
             <RoomMemberList room={room} currentMemberId={identity?.memberId ?? null} />
 
             <div className="bg-background absolute top-1/2 left-1/2 flex w-40 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border px-5 py-4 text-center shadow-sm sm:w-48 sm:px-6 sm:py-5">
@@ -321,13 +320,6 @@ export const RoomScreen = ({
         </CardContent>
       </Card>
 
-      <VoteDeck
-        selectedVote={currentMember?.vote ?? null}
-        disabled={currentMember?.role !== "participant" || room.revealed}
-        isPending={isPending}
-        onVote={handleVote}
-      />
-
       {feedbackMessage ? <p className="text-destructive text-sm">{feedbackMessage}</p> : null}
 
       <RoomJoinPanel
@@ -338,6 +330,6 @@ export const RoomScreen = ({
         onJoinNameChange={setJoinName}
         onSubmit={handleJoinRoom}
       />
-    </main>
+    </>
   )
 }
