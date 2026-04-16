@@ -29,12 +29,17 @@
 ## React
 
 - Usually react hooks and related logic should be encapsulated in a custom hook
+- For UI primitives, prefer `@tohuhono/ui` components when an equivalent
+  primitive exists. Only reach for local shadcn/Base UI primitives when
+  `@tohuhono/ui` does not provide the needed component.
 
 ## Tanstack
 
 - Use file-based routing under `src/routes`.
-- Prefer TanStack Start server functions for server-only mutations and secret-bearing reads.
-- Treat route loaders as isomorphic unless a TanStack skill explicitly documents a safer pattern.
+- Prefer TanStack Start server functions for server-only mutations and
+  secret-bearing reads.
+- Treat route loaders as isomorphic unless a TanStack skill explicitly documents
+  a safer pattern.
 
 ## Validation
 

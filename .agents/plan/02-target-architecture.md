@@ -62,7 +62,8 @@ Reasons:
 - server-side implementation is smaller than WebSockets
 - it maps well to Vercel streaming responses
 
-This app does not need bidirectional arbitrary messaging. Commands already have a clean path through server functions.
+This app does not need bidirectional arbitrary messaging. Commands already have
+a clean path through server functions.
 
 ## Why Redis
 
@@ -70,11 +71,13 @@ Redis solves two separate problems.
 
 ### 1. Shared State
 
-The room snapshot must be correct regardless of which Vercel function instance handles a request.
+The room snapshot must be correct regardless of which Vercel function instance
+handles a request.
 
 ### 2. Shared Notification Channel
 
-When a room changes, all connected clients need a signal that does not depend on in-memory process state.
+When a room changes, all connected clients need a signal that does not depend on
+in-memory process state.
 
 ## Data Model
 
@@ -118,7 +121,8 @@ If separate presence keys are needed later:
 
 - `pp:room:{roomId}:presence:{playerId}`
 
-For the first implementation, keeping presence inside the room snapshot is enough.
+For the first implementation, keeping presence inside the room snapshot is
+enough.
 
 ## Event Shape
 
@@ -200,7 +204,8 @@ src/
 
 - `planning-poker.ts`: shared types, card values, validation
 - `room.server.ts`: pure room domain logic and Redis access
-- `room.functions.ts`: server function boundaries for commands and snapshot reads
+- `room.functions.ts`: server function boundaries for commands and snapshot
+  reads
 - `room-events.server.ts`: event serialization and subscription helpers
 - room route: page shell and initial load
 - events route: SSE response only
@@ -218,6 +223,7 @@ Important invariants:
 - reset clears all votes and sets `revealed` to false
 - stale players are pruned before important decisions
 
-If conflicting commands arrive close together, the resulting room snapshot must still satisfy these invariants.
+If conflicting commands arrive close together, the resulting room snapshot must
+still satisfy these invariants.
 
 Continue to [03-implementation-phases.md](./03-implementation-phases.md).
