@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm exec prettier:fix"
+    "pre-commit": "pnpm run prettier:fix"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
