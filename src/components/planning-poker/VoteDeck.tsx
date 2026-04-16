@@ -14,7 +14,7 @@ export const VoteDeck = ({
   isPending: boolean
   onVote: (vote: CardValue) => void
 }) => (
-  <div className="grid w-full max-w-xl grid-cols-5 gap-2 sm:gap-3">
+  <div className="grid w-full grid-cols-5 gap-2 sm:gap-3">
     {cardValues.map((cardValue) => {
       const isSelected = selectedVote === cardValue
       return (
