@@ -29,8 +29,10 @@ These constraints eliminate a few otherwise reasonable options.
 ### Not Recommended
 
 - Client polling: simple, but explicitly ruled out.
-- RSC cache invalidation as the main sync mechanism: wrong abstraction for collaborative room state.
-- In-memory subscriber registries in the app runtime: not reliable on Vercel functions.
+- RSC cache invalidation as the main sync mechanism: wrong abstraction for
+  collaborative room state.
+- In-memory subscriber registries in the app runtime: not reliable on Vercel
+  functions.
 - First-party WebSockets on Vercel functions: not the platform's clean path.
 
 ### Viable Direction
@@ -68,13 +70,15 @@ That favors SSE over WebSockets.
 
 ### 3. Snapshot-First State Model
 
-This app has tiny room state. Clients should not need to replay a complex event log to recover.
+This app has tiny room state. Clients should not need to replay a complex event
+log to recover.
 
 The source of truth should be a room snapshot in Redis.
 
 ### 4. Progressive Hardening
 
-The build should start with a simple internal product shape and only add complexity when there is a demonstrated need.
+The build should start with a simple internal product shape and only add
+complexity when there is a demonstrated need.
 
 Examples of things to defer:
 
