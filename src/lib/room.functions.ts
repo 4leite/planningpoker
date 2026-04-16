@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
+import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 
 import {
@@ -13,6 +14,7 @@ import {
   roomMemberRoleSchema,
 } from "#/lib/planning-poker"
 import { generateRoomId } from "#/lib/room-id"
+import { assertRoomCreateAllowed } from "#/lib/room-rate-limit.server"
 import { createRoom, getRoomSnapshot, mutateRoom, type RoomBackendConfig } from "#/lib/room.server"
 
 const roomIdInputSchema = z.object({
@@ -74,6 +76,8 @@ const getRoomBackend = (): RoomBackendConfig => {
 }
 
 export const createRoomFn = createServerFn({ method: "POST" }).handler(async () => {
+  assertRoomCreateAllowed(getRequest(), Date.now())
+
   const backend = getRoomBackend()
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
