@@ -1,44 +1,71 @@
-# 04. Open Questions And Acceptance
+# 04. Decisions And Acceptance
 
-## Open Questions
+## Locked Decisions
 
-These decisions are still worth confirming before implementation starts.
+These decisions were confirmed during the product interview and should be treated as the v1 target.
 
 ### Product Scope
 
-- Are rooms anonymous, or will there be login later?
-- Can two players join with the same display name?
-- Does a room need an explicit host role?
-- Should reveal be allowed only for a host, or for any participant?
+- anonymous rooms only
+- public link-share usage is acceptable for v1
+- no host role in v1
+- display names must be unique within a room
+- no built-in story or task field in v1
+- no round history in v1
 
-### Presence
+### Room Behavior
 
-- What timeout should define an inactive player?
-- Should a page unload attempt an explicit leave request?
-- Is reconnecting with the same player id always the desired behavior?
+- create and join are separate flows
+- entering an unknown room id shows not found
+- room ids are generated human-readable ids
+- create first, then choose display name inside the room
+- a browser uses one stable identity across rooms
+- the same browser in two tabs of the same room controls one shared seat
+- display name is remembered across rooms for convenience
+- in-room rename is out of scope
 
-### Realtime Details
+### Roles And Voting
 
-- Should the SSE route send an immediate snapshot on connect, or should the client fetch first?
-- Is version-based stale event protection needed in v1, or only if bugs appear?
-- Is Pub/Sub sufficient, or is there a real requirement for replayable event history later?
+- roles are `participant` and `spectator`
+- role switching is allowed in-room
+- switching to spectator clears the current vote
+- switching to participant during a hidden round makes the member part of the current round
+- anyone in the room may reveal
+- anyone in the room may reset
+- deck is `0, 1, 2, 3, 5, 8, 13, 21, 34, ?`
+- votes may change until reveal
+- reveal is allowed at any time
+- reset is the only way back to a hidden round
+- join-after-reveal shows the current revealed state immediately
+- post-reveal summary shows the average of numeric votes only and ignores `?`
 
-### Deployment
+### Presence And Lifetime
 
-- Which Redis region should be used relative to the Vercel function region?
-- Will usage remain small enough that one SSE connection per active browser is comfortable?
+- the roster is sticky room membership, not strict live presence
+- no heartbeat in v1
+- no unload leave request in v1
+- no inactive-member pruning in v1
+- rooms expire after one day using Redis TTL
 
-## Recommended Answers For v1
+## Technical Defaults
 
-Unless product requirements say otherwise, use these defaults:
+These were not contested and can be treated as implementation defaults.
 
-- anonymous rooms
-- no host role initially
-- any active participant may reveal when all active players have voted
-- reconnect with the same local player id
-- stale timeout of 75 seconds
-- client fetches snapshot once before opening SSE and again after reconnect
-- Pub/Sub only, no replay log
+- TanStack Start on Vercel
+- Redis plus SSE for realtime updates
+- Upstash is acceptable for v1
+- client fetches one snapshot before opening SSE
+- Pub/Sub is sufficient for v1
+- version-based stale-event protection is reasonable and should be included
+
+## Known Trade-Offs
+
+These trade-offs are accepted for v1 and should be visible in both code and UI copy.
+
+- anyone with the room link can interfere with reveal and reset
+- the roster can show absent people as if they are still part of the room
+- voted and not-voted progress is informative, not authoritative active-presence data
+- a still-active room can disappear once it reaches its one-day TTL
 
 ## Acceptance Criteria
 
@@ -46,11 +73,16 @@ The rebuild is ready when all of the following are true.
 
 ### Functional
 
-- a user can open any room URL and join with a name
+- a user can create a room from the landing page
+- a user can open an existing room URL and join with a unique name
+- entering an unknown room id shows not found instead of creating the room
 - two or more users in the same room see each other appear without polling
 - votes remain hidden until reveal
-- reveal only works when all active players have voted
+- reveal works at any time for any room member
 - reset clears the round for all connected clients
+- switching from participant to spectator clears the vote
+- switching from spectator to participant updates the room immediately
+- the revealed room shows an average across numeric votes only
 
 ### Realtime
 
@@ -69,20 +101,28 @@ The rebuild is ready when all of the following are true.
 - domain rules are not embedded in UI components
 - mutation boundaries are server-side and typed
 - room transport concerns are isolated from rendering concerns
+- the product decision to use sticky membership instead of live presence is explicit in the model
 
 ## Validation Checklist
 
+- create a room from the landing page and confirm the redirect to the room route
+- enter a fake room id and confirm not-found behavior
 - open the same room in two browsers and join from both
+- open the same room in two tabs from one browser and confirm they control the same seat
 - cast a vote in one browser and confirm the other browser updates live
+- switch one member between participant and spectator and confirm the room updates live
 - reveal from one browser and confirm both update immediately
+- confirm the revealed average ignores `?`
 - refresh one browser and confirm identity and room state recover
 - disconnect one browser temporarily and confirm it self-heals on reconnect
-- leave a browser idle and confirm stale presence is pruned
+- leave a browser idle and confirm the room does not pretend to prune roster members automatically
+- confirm the room expires after the configured one-day TTL
 
 ## Follow-Up Work After v1
 
 These are natural next steps after the rebuild is stable.
 
+- live presence with heartbeat and stale-member pruning
 - host permissions
 - room history or previous rounds
 - authentication
