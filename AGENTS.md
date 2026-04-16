@@ -4,7 +4,8 @@
 - Framework: TanStack Start with React 19
 - Routing: TanStack Router file-based routes in `src/routes`
 - Styling: Tailwind CSS v4 via `@tailwindcss/vite`
-- UI primitives: prefer `@tohuhono/ui`; local `shadcn` is configured for Base UI with `components.json` when a primitive is not available there
+- UI primitives: prefer `@tohuhono/ui`; local `shadcn` is configured for Base UI
+  with `components.json` when a primitive is not available there
 - Devtools: `@tanstack/devtools-vite`, `@tanstack/react-devtools`,
   `@tanstack/react-router-devtools`
 - Deployment target: Vercel via Nitro
