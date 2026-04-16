@@ -4,6 +4,8 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
 import { AntiFOUC } from "#/components/AntiFOUC"
 import { Menu } from "#/components/layout/Menu"
+import { MenuProvider } from "#/components/layout/MenuContext"
+import { AppQueryProvider } from "#/components/QueryProvider"
 
 import appCss from "../styles.css?url"
 
@@ -18,7 +20,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "Planning Poker",
       },
     ],
     links: [
@@ -39,19 +41,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-background text-foreground min-h-svh w-full">
-        <Menu />
-        {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <AppQueryProvider>
+          <MenuProvider>
+            <Menu />
+            {children}
+            <TanStackDevtools
+              config={{
+                position: "bottom-right",
+              }}
+              plugins={[
+                {
+                  name: "Tanstack Router",
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+              ]}
+            />
+          </MenuProvider>
+        </AppQueryProvider>
         <Scripts />
       </body>
     </html>
