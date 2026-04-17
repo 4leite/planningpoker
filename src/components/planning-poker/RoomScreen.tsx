@@ -358,12 +358,7 @@ export const RoomScreen = ({
                     }
                   />
                 </label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleExit}
-                  aria-label="Exit room"
-                >
+                <Button type="button" variant="outline" onClick={handleExit} aria-label="Exit room">
                   <ExitIcon />
                 </Button>
               </div>
