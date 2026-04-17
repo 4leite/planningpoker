@@ -361,7 +361,6 @@ export const RoomScreen = ({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={isPending}
                   onClick={handleExit}
                   aria-label="Exit room"
                 >
@@ -376,7 +375,7 @@ export const RoomScreen = ({
       <VoteDeck
         selectedVote={currentMember?.vote ?? null}
         disabled={currentMember?.role !== "participant" || room.revealed}
-        isPending={isPending}
+        isPending={false}
         onVote={handleVote}
       />
       <Card className="w-full max-w-5xl">
