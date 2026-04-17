@@ -13,8 +13,14 @@ import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
 import { useRoomRealtime } from "#/hooks/use-room-realtime"
 import {
   calculateNumericAverage,
+  castVoteState,
+  changeRoleState,
   formatAverageVote,
   getVoteProgress,
+  joinRoomState,
+  leaveRoomState,
+  resetRoomState,
+  revealRoomState,
   type CardValue,
   type RoomState,
 } from "#/lib/planning-poker"
@@ -93,14 +99,38 @@ export const RoomScreen = ({
     setRoom(nextRoom)
   }
 
-  const roomMutationOptions = {
+  const createRoomMutationOptions = <TVars,>(
+    optimisticUpdate?: (currentRoom: RoomState, variables: TVars) => RoomState,
+  ) => ({
+    onMutate: async (variables: TVars) => {
+      await queryClient.cancelQueries({ queryKey: roomQueryKey(roomId) })
+
+      const previousRoom =
+        queryClient.getQueryData<RoomState | null>(roomQueryKey(roomId)) ?? room ?? null
+
+      if (!previousRoom || !optimisticUpdate) {
+        return { previousRoom }
+      }
+
+      try {
+        applyRoomMutation(optimisticUpdate(previousRoom, variables))
+      } catch {
+        // Let the server remain the source of truth for invalid optimistic transitions.
+      }
+
+      return { previousRoom }
+    },
     onSuccess: (nextRoom: RoomState) => {
       applyRoomMutation(nextRoom)
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, _variables: TVars, context?: { previousRoom: RoomState | null }) => {
+      if (context?.previousRoom) {
+        setRoom(context.previousRoom)
+      }
+
       setFeedbackMessage(formatRoomError(error))
     },
-  }
+  })
 
   const joinRoomMutation = useMutation({
     mutationFn: (name: string) => {
@@ -116,7 +146,18 @@ export const RoomScreen = ({
         },
       })
     },
-    ...roomMutationOptions,
+    ...createRoomMutationOptions((currentRoom, name) => {
+      if (!identity) {
+        return currentRoom
+      }
+
+      return joinRoomState({
+        room: currentRoom,
+        memberId: identity.memberId,
+        name,
+        now: Date.now(),
+      })
+    }),
   })
   const leaveRoomMutation = useMutation({
     mutationFn: () => {
@@ -131,7 +172,17 @@ export const RoomScreen = ({
         },
       })
     },
-    ...roomMutationOptions,
+    ...createRoomMutationOptions<undefined>((currentRoom) => {
+      if (!identity) {
+        return currentRoom
+      }
+
+      return leaveRoomState({
+        room: currentRoom,
+        memberId: identity.memberId,
+        now: Date.now(),
+      })
+    }),
   })
   const changeRoleMutation = useMutation({
     mutationFn: (role: "participant" | "spectator") => {
@@ -147,7 +198,18 @@ export const RoomScreen = ({
         },
       })
     },
-    ...roomMutationOptions,
+    ...createRoomMutationOptions((currentRoom, role) => {
+      if (!identity) {
+        return currentRoom
+      }
+
+      return changeRoleState({
+        room: currentRoom,
+        memberId: identity.memberId,
+        role,
+        now: Date.now(),
+      })
+    }),
   })
   const castVoteMutation = useMutation({
     mutationFn: (vote: CardValue) => {
@@ -163,15 +225,36 @@ export const RoomScreen = ({
         },
       })
     },
-    ...roomMutationOptions,
+    ...createRoomMutationOptions((currentRoom, vote) => {
+      if (!identity) {
+        return currentRoom
+      }
+
+      return castVoteState({
+        room: currentRoom,
+        memberId: identity.memberId,
+        vote,
+        now: Date.now(),
+      })
+    }),
   })
   const revealVotesMutation = useMutation({
     mutationFn: () => revealVotesFn({ data: { roomId } }),
-    ...roomMutationOptions,
+    ...createRoomMutationOptions<undefined>((currentRoom) =>
+      revealRoomState({
+        room: currentRoom,
+        now: Date.now(),
+      }),
+    ),
   })
   const resetRoundMutation = useMutation({
     mutationFn: () => resetRoundFn({ data: { roomId } }),
-    ...roomMutationOptions,
+    ...createRoomMutationOptions<undefined>((currentRoom) =>
+      resetRoomState({
+        room: currentRoom,
+        now: Date.now(),
+      }),
+    ),
   })
 
   const isPending =
@@ -208,12 +291,12 @@ export const RoomScreen = ({
 
   const handleReveal = () => {
     setFeedbackMessage(null)
-    revealVotesMutation.mutate()
+    revealVotesMutation.mutate(undefined)
   }
 
   const handleReset = () => {
     setFeedbackMessage(null)
-    resetRoundMutation.mutate()
+    resetRoundMutation.mutate(undefined)
   }
 
   const handleCopyLink = async () => {
