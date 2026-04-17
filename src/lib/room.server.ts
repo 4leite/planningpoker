@@ -22,8 +22,21 @@ export type RoomBackendConfig =
 let sharedClientPromise: Promise<ReturnType<typeof createClient>> | null = null
 let sharedClientUrl: string | null = null
 
-const memoryRooms = new Map<string, RoomState>()
-const memorySubscribers = new Map<string, Set<(message: string) => void>>()
+declare global {
+  var __planningPokerMemoryStore:
+    | {
+        rooms: Map<string, RoomState>
+        subscribers: Map<string, Set<(message: string) => void>>
+      }
+    | undefined
+}
+
+const memoryStore = (globalThis.__planningPokerMemoryStore ??= {
+  rooms: new Map<string, RoomState>(),
+  subscribers: new Map<string, Set<(message: string) => void>>(),
+})
+
+const { rooms: memoryRooms, subscribers: memorySubscribers } = memoryStore
 
 const connectRedisClient = async (url: string) => {
   const client = createClient({ url })

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useServerFn } from "@tanstack/react-start"
-import { useEffect, useEffectEvent, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { roomUpdatedEventSchema, type RoomState } from "#/lib/planning-poker"
 import { roomQueryKey, roomQueryOptions } from "#/lib/room-query"
@@ -35,11 +35,6 @@ export const useRoomRealtime = ({
     }),
   )
 
-  const syncSnapshot = useEffectEvent(async () => {
-    const nextRoom = await query.refetch()
-    return nextRoom.data ?? null
-  })
-
   const setRoom = (nextRoom: RoomState | null) => {
     queryClient.setQueryData(roomQueryKey(roomId), (currentRoom: RoomState | null | undefined) => {
       if (!nextRoom) {
@@ -60,7 +55,6 @@ export const useRoomRealtime = ({
       return
     }
 
-    let firstOpen = true
     const eventSource = new EventSource(`/api/rooms/${encodeURIComponent(roomId)}/events`)
 
     const handleRoomUpdated = (event: Event) => {
@@ -80,13 +74,6 @@ export const useRoomRealtime = ({
     eventSource.addEventListener("room.updated", handleRoomUpdated)
     eventSource.onopen = () => {
       setConnectionState("live")
-
-      if (firstOpen) {
-        firstOpen = false
-        return
-      }
-
-      void syncSnapshot()
     }
     eventSource.onerror = () => {
       setConnectionState("reconnecting")
@@ -97,7 +84,7 @@ export const useRoomRealtime = ({
       eventSource.close()
       setConnectionState("idle")
     }
-  }, [enabled, roomId, syncSnapshot])
+  }, [enabled, roomId])
 
   return {
     room: query.data ?? null,

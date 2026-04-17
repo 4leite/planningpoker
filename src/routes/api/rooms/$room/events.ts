@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { roomIdSchema } from "#/lib/planning-poker"
-import { subscribeToRoomEvents, type RoomBackendConfig } from "#/lib/room.server"
+import { roomIdSchema, roomUpdatedEventSchema } from "#/lib/planning-poker"
+import { getRoomSnapshot, subscribeToRoomEvents, type RoomBackendConfig } from "#/lib/room.server"
 
 const encoder = new TextEncoder()
 
@@ -98,6 +98,22 @@ export const Route = createFileRoute("/api/rooms/$room/events")({
                 void closeStream(controller)
               }
             })
+
+            const room = await getRoomSnapshot(backend, roomId)
+            if (!room) {
+              return
+            }
+
+            sendChunk(
+              `event: room.updated\ndata: ${JSON.stringify(
+                roomUpdatedEventSchema.parse({
+                  type: "room.updated",
+                  roomId: room.roomId,
+                  version: room.version,
+                  room,
+                }),
+              )}\n\n`,
+            )
           },
           async cancel() {
             await closeStream()
