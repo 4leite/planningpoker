@@ -135,16 +135,13 @@ export const countCastVotes = (members: RoomMember[]) =>
   members.reduce((count, member) => count + (member.vote === null ? 0 : 1), 0)
 
 export const calculateVoteMode = (members: RoomMember[]) => {
-  const voteCounts = members.reduce(
-    (counts, member) => {
-      if (member.vote !== null) {
-        counts.set(member.vote, (counts.get(member.vote) ?? 0) + 1)
-      }
+  const voteCounts = members.reduce((counts, member) => {
+    if (member.vote !== null) {
+      counts.set(member.vote, (counts.get(member.vote) ?? 0) + 1)
+    }
 
-      return counts
-    },
-    new Map<CardValue, number>(),
-  )
+    return counts
+  }, new Map<CardValue, number>())
 
   let highestCount = 0
   let mode: CardValue | null = null

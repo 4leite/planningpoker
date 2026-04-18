@@ -26,37 +26,37 @@ export default defineConfig({
   // Or explicit count
   // workers: 4,
   // workers: '50%', // Percentage of CPU cores
-});
+})
 ```
 
 ### Serial Execution When Needed
 
 ```typescript
 // Entire file serial
-test.describe.configure({ mode: "serial" });
+test.describe.configure({ mode: "serial" })
 
 test.describe("Sequential Tests", () => {
   test("first", async ({ page }) => {
     // Runs first
-  });
+  })
 
   test("second", async ({ page }) => {
     // Runs after first
-  });
-});
+  })
+})
 ```
 
 ```typescript
 // Single describe block serial
 test.describe("Parallel Tests", () => {
-  test("a", async () => {}); // Parallel
-  test("b", async () => {}); // Parallel
-});
+  test("a", async () => {}) // Parallel
+  test("b", async () => {}) // Parallel
+})
 
 test.describe.serial("Serial Tests", () => {
-  test("c", async () => {}); // Serial
-  test("d", async () => {}); // Serial
-});
+  test("c", async () => {}) // Serial
+  test("d", async () => {}) // Serial
+})
 ```
 
 ### Parallel Projects
@@ -69,7 +69,7 @@ export default defineConfig({
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
-});
+})
 ```
 
 ```bash
@@ -120,47 +120,53 @@ jobs:
       - run: npx playwright test --shard=${{ matrix.shard }}/4
 ```
 
-> **For comprehensive CI sharding** (blob reports, merging sharded results, full workflows), see [ci-cd.md](ci-cd.md#sharding).
+> **For comprehensive CI sharding** (blob reports, merging sharded results, full workflows), see
+> [ci-cd.md](ci-cd.md#sharding).
 
 ## Test Optimization
 
 ### Reuse Authentication
 
-Avoid logging in for every test. Use setup projects with storage state to authenticate once and reuse the session.
+Avoid logging in for every test. Use setup projects with storage state to authenticate once and
+reuse the session.
 
-> **For authentication patterns** (storage state, multiple auth states, setup projects), see [fixtures-hooks.md](fixtures-hooks.md#authentication-patterns).
+> **For authentication patterns** (storage state, multiple auth states, setup projects), see
+> [fixtures-hooks.md](fixtures-hooks.md#authentication-patterns).
 
 ### Reuse Page State (serial only — trade-off with isolation)
 
-Sharing a single page/context across tests with `beforeAll`/`afterAll` is **not recommended** for most suites: it breaks test isolation, causes state leak between tests, and makes failures harder to debug. Prefer a fresh `page` per test (Playwright default). Use shared page only when you explicitly need serial execution and accept no isolation.
+Sharing a single page/context across tests with `beforeAll`/`afterAll` is **not recommended** for
+most suites: it breaks test isolation, causes state leak between tests, and makes failures harder to
+debug. Prefer a fresh `page` per test (Playwright default). Use shared page only when you explicitly
+need serial execution and accept no isolation.
 
 ```typescript
 // ⚠️ Serial only, no isolation: state from one test leaks into the next.
 // Prefer test.describe.configure({ mode: 'serial' }) + fresh page per test, or beforeEach + page.goto().
-test.describe.configure({ mode: "serial" });
+test.describe.configure({ mode: "serial" })
 test.describe("Dashboard", () => {
-  let page: Page;
+  let page: Page
 
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext({
       storageState: ".auth/user.json",
-    });
-    page = await context.newPage();
-    await page.goto("/dashboard");
-  });
+    })
+    page = await context.newPage()
+    await page.goto("/dashboard")
+  })
 
   test.afterAll(async () => {
-    await page?.close();
-  });
+    await page?.close()
+  })
 
   test("shows stats", async () => {
-    await expect(page.getByTestId("stats")).toBeVisible();
-  });
+    await expect(page.getByTestId("stats")).toBeVisible()
+  })
 
   test("shows chart", async () => {
-    await expect(page.getByTestId("chart")).toBeVisible();
-  });
-});
+    await expect(page.getByTestId("chart")).toBeVisible()
+  })
+})
 ```
 
 ### Lazy Navigation
@@ -168,29 +174,29 @@ test.describe("Dashboard", () => {
 ```typescript
 // Bad: Navigate in every test
 test("check header", async ({ page }) => {
-  await page.goto("/products");
-  await expect(page.getByRole("heading")).toBeVisible();
-});
+  await page.goto("/products")
+  await expect(page.getByRole("heading")).toBeVisible()
+})
 
 test("check footer", async ({ page }) => {
-  await page.goto("/products");
-  await expect(page.getByRole("contentinfo")).toBeVisible();
-});
+  await page.goto("/products")
+  await expect(page.getByRole("contentinfo")).toBeVisible()
+})
 
 // Good: Share navigation
 test.describe("Products Page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/products");
-  });
+    await page.goto("/products")
+  })
 
   test("check header", async ({ page }) => {
-    await expect(page.getByRole("heading")).toBeVisible();
-  });
+    await expect(page.getByRole("heading")).toBeVisible()
+  })
 
   test("check footer", async ({ page }) => {
-    await expect(page.getByRole("contentinfo")).toBeVisible();
-  });
-});
+    await expect(page.getByRole("contentinfo")).toBeVisible()
+  })
+})
 ```
 
 ### Skip Unnecessary Setup
@@ -198,14 +204,14 @@ test.describe("Products Page", () => {
 ```typescript
 // Use test.skip for conditional execution
 test("admin feature", async ({ page }) => {
-  test.skip(!process.env.ADMIN_ENABLED, "Admin features disabled");
+  test.skip(!process.env.ADMIN_ENABLED, "Admin features disabled")
   // ...
-});
+})
 
 // Use test.fixme for known broken tests
 test.fixme("broken feature", async ({ page }) => {
   // Skipped but tracked
-});
+})
 ```
 
 ## Network Optimization
@@ -215,14 +221,10 @@ test.fixme("broken feature", async ({ page }) => {
 ```typescript
 test.beforeEach(async ({ page }) => {
   // Mock slow/heavy endpoints
-  await page.route("**/api/analytics", (route) =>
-    route.fulfill({ json: { views: 1000 } }),
-  );
+  await page.route("**/api/analytics", (route) => route.fulfill({ json: { views: 1000 } }))
 
-  await page.route("**/api/recommendations", (route) =>
-    route.fulfill({ json: [] }),
-  );
-});
+  await page.route("**/api/recommendations", (route) => route.fulfill({ json: [] }))
+})
 ```
 
 ### Block Unnecessary Resources
@@ -231,17 +233,13 @@ test.beforeEach(async ({ page }) => {
 test.beforeEach(async ({ page }) => {
   // Block analytics, ads, tracking
   await page.route("**/*", (route) => {
-    const url = route.request().url();
-    if (
-      url.includes("google-analytics") ||
-      url.includes("facebook") ||
-      url.includes("hotjar")
-    ) {
-      return route.abort();
+    const url = route.request().url()
+    if (url.includes("google-analytics") || url.includes("facebook") || url.includes("hotjar")) {
+      return route.abort()
     }
-    return route.continue();
-  });
-});
+    return route.continue()
+  })
+})
 ```
 
 ### Block Resource Types
@@ -249,56 +247,69 @@ test.beforeEach(async ({ page }) => {
 ```typescript
 // Block images and fonts for faster tests
 await page.route("**/*", (route) => {
-  const resourceType = route.request().resourceType();
+  const resourceType = route.request().resourceType()
   if (["image", "font", "stylesheet"].includes(resourceType)) {
-    return route.abort();
+    return route.abort()
   }
-  return route.continue();
-});
+  return route.continue()
+})
 ```
 
 ### Cache API Responses
 
 ```typescript
-const apiCache = new Map<string, object>();
+const apiCache = new Map<string, object>()
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/**", async (route) => {
-    const url = route.request().url();
+    const url = route.request().url()
 
     if (apiCache.has(url)) {
-      return route.fulfill({ json: apiCache.get(url) });
+      return route.fulfill({ json: apiCache.get(url) })
     }
 
-    const response = await route.fetch();
-    const json = await response.json();
-    apiCache.set(url, json);
-    return route.fulfill({ json });
-  });
-});
+    const response = await route.fetch()
+    const json = await response.json()
+    apiCache.set(url, json)
+    return route.fulfill({ json })
+  })
+})
 ```
 
 ## Isolation and Parallel Execution
 
 ### Default: one context per test
 
-Playwright gives each test its own browser context (and page). That gives isolation: no shared cookies, storage, or DOM between tests, so failures don’t carry over and you can run tests in any order or in parallel. Keep this default unless you have a clear reason to share state.
+Playwright gives each test its own browser context (and page). That gives isolation: no shared
+cookies, storage, or DOM between tests, so failures don’t carry over and you can run tests in any
+order or in parallel. Keep this default unless you have a clear reason to share state.
 
 ### Avoiding state leak in parallel runs
 
-- **Do not** rely on shared mutable state (e.g. a single `page` or `context` in `beforeAll`) when tests can run in parallel. State from one test can leak into another and cause flaky, order-dependent failures.
-- Use **fixtures** for setup/teardown and **`beforeEach`** for per-test navigation so each test gets a fresh page or a clean slate.
-- For **backend or DB state** shared across tests, isolate per worker so parallel workers don’t collide. Use a worker-scoped fixture and `testInfo.workerIndex` (or `process.env.TEST_WORKER_INDEX`) to create unique data per worker (e.g. unique user or DB prefix). See [fixtures-hooks.md](../core/fixtures-hooks.md) for worker-scoped fixtures and [debugging.md](../debugging/debugging.md) for debugging flaky parallel runs.
+- **Do not** rely on shared mutable state (e.g. a single `page` or `context` in `beforeAll`) when
+  tests can run in parallel. State from one test can leak into another and cause flaky,
+  order-dependent failures.
+- Use **fixtures** for setup/teardown and **`beforeEach`** for per-test navigation so each test gets
+  a fresh page or a clean slate.
+- For **backend or DB state** shared across tests, isolate per worker so parallel workers don’t
+  collide. Use a worker-scoped fixture and `testInfo.workerIndex` (or
+  `process.env.TEST_WORKER_INDEX`) to create unique data per worker (e.g. unique user or DB prefix).
+  See [fixtures-hooks.md](../core/fixtures-hooks.md) for worker-scoped fixtures and
+  [debugging.md](../debugging/debugging.md) for debugging flaky parallel runs.
 
 ### Debugging flaky parallel runs
 
 If a test is flaky only with multiple workers:
 
-1. **Reproduce**: Run with default workers and `--repeat-each=10` (or `--repeat-each=100 --max-failures=1`).
-2. **Confirm parallel-specific**: Run with `--workers=1`. If the failure disappears, the cause is likely shared state or non-isolated backend/DB data.
-3. **Fix**: Remove shared page/context; use per-test fixtures and `beforeEach`; isolate test data per worker with `workerIndex` in a worker-scoped fixture.
+1. **Reproduce**: Run with default workers and `--repeat-each=10` (or
+   `--repeat-each=100 --max-failures=1`).
+2. **Confirm parallel-specific**: Run with `--workers=1`. If the failure disappears, the cause is
+   likely shared state or non-isolated backend/DB data.
+3. **Fix**: Remove shared page/context; use per-test fixtures and `beforeEach`; isolate test data
+   per worker with `workerIndex` in a worker-scoped fixture.
 
-Workers are restarted after a test failure so subsequent tests in that worker get a clean environment; fixing isolation still prevents the initial flakiness.
+Workers are restarted after a test failure so subsequent tests in that worker get a clean
+environment; fixing isolation still prevents the initial flakiness.
 
 ## Resource Management
 
@@ -308,17 +319,17 @@ Workers are restarted after a test failure so subsequent tests in that worker ge
 // Recommended: One context per test (default) — full isolation
 test("isolated test", async ({ page }) => {
   // Fresh context automatically
-});
+})
 
 // Manual context for specific needs
 test("multiple tabs", async ({ browser }) => {
-  const context = await browser.newContext();
-  const page1 = await context.newPage();
-  const page2 = await context.newPage();
+  const context = await browser.newContext()
+  const page1 = await context.newPage()
+  const page2 = await context.newPage()
 
   // Clean up
-  await context.close();
-});
+  await context.close()
+})
 ```
 
 ### Memory Management
@@ -336,7 +347,7 @@ export default defineConfig({
       args: ["--disable-dev-shm-usage"],
     },
   },
-});
+})
 ```
 
 ### Timeouts
@@ -357,7 +368,7 @@ export default defineConfig({
     navigationTimeout: 15000,
     actionTimeout: 10000,
   },
-});
+})
 ```
 
 ## Benchmarking
@@ -366,34 +377,32 @@ export default defineConfig({
 
 ```typescript
 test("performance test", async ({ page }, testInfo) => {
-  const startTime = Date.now();
+  const startTime = Date.now()
 
-  await page.goto("/");
+  await page.goto("/")
 
-  const loadTime = Date.now() - startTime;
-  console.log(`Page load: ${loadTime}ms`);
+  const loadTime = Date.now() - startTime
+  console.log(`Page load: ${loadTime}ms`)
 
   // Add to test report
   testInfo.annotations.push({
     type: "performance",
     description: `Load time: ${loadTime}ms`,
-  });
-});
+  })
+})
 ```
 
 ### Performance Metrics
 
 ```typescript
 test("collect metrics", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/")
 
   const metrics = await page.evaluate(() => ({
     // Navigation timing
-    loadTime:
-      performance.timing.loadEventEnd - performance.timing.navigationStart,
+    loadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
     domContentLoaded:
-      performance.timing.domContentLoadedEventEnd -
-      performance.timing.navigationStart,
+      performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
 
     // Performance entries
     resources: performance.getEntriesByType("resource").length,
@@ -401,20 +410,20 @@ test("collect metrics", async ({ page }) => {
     // Memory (Chrome only)
     // @ts-ignore
     memory: performance.memory?.usedJSHeapSize,
-  }));
+  }))
 
-  console.log("Metrics:", metrics);
-  expect(metrics.loadTime).toBeLessThan(3000);
-});
+  console.log("Metrics:", metrics)
+  expect(metrics.loadTime).toBeLessThan(3000)
+})
 ```
 
 ### Lighthouse Integration
 
 ```typescript
-import { playAudit } from "playwright-lighthouse";
+import { playAudit } from "playwright-lighthouse"
 
 test("lighthouse audit", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/")
 
   const audit = await playAudit({
     page,
@@ -425,12 +434,10 @@ test("lighthouse audit", async ({ page }) => {
       seo: 80,
     },
     port: 9222,
-  });
+  })
 
-  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(
-    80,
-  );
-});
+  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(80)
+})
 ```
 
 ## Performance Checklist
@@ -449,5 +456,7 @@ test("lighthouse audit", async ({ page }) => {
 ## Related References
 
 - **CI/CD sharding**: See [ci-cd.md](ci-cd.md) for CI configuration
-- **Test organization**: See [test-suite-structure.md](../core/test-suite-structure.md) for structuring tests
-- **Fixtures for reuse**: See [fixtures-hooks.md](../core/fixtures-hooks.md) for authentication patterns
+- **Test organization**: See [test-suite-structure.md](../core/test-suite-structure.md) for
+  structuring tests
+- **Fixtures for reuse**: See [fixtures-hooks.md](../core/fixtures-hooks.md) for authentication
+  patterns

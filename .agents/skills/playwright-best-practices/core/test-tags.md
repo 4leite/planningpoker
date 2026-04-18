@@ -17,7 +17,7 @@
 ### Tag via Details Object
 
 ```typescript
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test(
   "test login page",
@@ -25,10 +25,10 @@ test(
     tag: "@fast",
   },
   async ({ page }) => {
-    await page.goto("/login");
-    await expect(page.getByRole("heading")).toBeVisible();
-  }
-);
+    await page.goto("/login")
+    await expect(page.getByRole("heading")).toBeVisible()
+  },
+)
 
 test(
   "test dashboard",
@@ -36,24 +36,24 @@ test(
     tag: "@slow",
   },
   async ({ page }) => {
-    await page.goto("/dashboard");
-    await expect(page.getByTestId("charts")).toBeVisible();
-  }
-);
+    await page.goto("/dashboard")
+    await expect(page.getByTestId("charts")).toBeVisible()
+  },
+)
 ```
 
 ### Tag via Title (not recommended)
 
 ```typescript
 test("test full report @slow", async ({ page }) => {
-  await page.goto("/reports/full");
-  await expect(page.getByText("Report loaded")).toBeVisible();
-});
+  await page.goto("/reports/full")
+  await expect(page.getByText("Report loaded")).toBeVisible()
+})
 
 test("quick validation @fast @smoke", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("body")).toBeVisible();
-});
+  await page.goto("/")
+  await expect(page.locator("body")).toBeVisible()
+})
 ```
 
 ## Tagging Describe Blocks
@@ -69,13 +69,13 @@ test.describe(
   () => {
     test("test report header", async ({ page }) => {
       // Inherits @report tag
-    });
+    })
 
     test("test report footer", async ({ page }) => {
       // Inherits @report tag
-    });
-  }
-);
+    })
+  },
+)
 ```
 
 ### Combine Group and Test Tags
@@ -89,7 +89,7 @@ test.describe(
   () => {
     test("admin dashboard", async ({ page }) => {
       // Has @admin tag
-    });
+    })
 
     test(
       "admin settings",
@@ -98,10 +98,10 @@ test.describe(
       },
       async ({ page }) => {
         // Has @admin, @slow, @critical tags
-      }
-    );
-  }
-);
+      },
+    )
+  },
+)
 ```
 
 ## Running Tagged Tests
@@ -151,18 +151,18 @@ npx playwright test --grep "@api" --grep-invert "@slow"
 ### Filter in playwright.config.ts
 
 ```typescript
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   grep: /@smoke/,
   grepInvert: /@flaky/,
-});
+})
 ```
 
 ### Project-Specific Tags
 
 ```typescript
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   projects: [
@@ -179,20 +179,20 @@ export default defineConfig({
       grep: /@critical/,
     },
   ],
-});
+})
 ```
 
 ### Environment-Based Filtering
 
 ```typescript
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
-const isCI = !!process.env.CI;
+const isCI = !!process.env.CI
 
 export default defineConfig({
   grep: isCI ? /@smoke|@critical/ : undefined,
   grepInvert: isCI ? /@flaky/ : undefined,
-});
+})
 ```
 
 ## Tag Organization Patterns
@@ -201,15 +201,15 @@ export default defineConfig({
 
 ```typescript
 // Smoke tests - quick validation
-test("homepage loads", { tag: "@smoke" }, async ({ page }) => {});
-test("login works", { tag: "@smoke" }, async ({ page }) => {});
+test("homepage loads", { tag: "@smoke" }, async ({ page }) => {})
+test("login works", { tag: "@smoke" }, async ({ page }) => {})
 
 // Regression tests - comprehensive
-test("full checkout flow", { tag: "@regression" }, async ({ page }) => {});
-test("all payment methods", { tag: "@regression" }, async ({ page }) => {});
+test("full checkout flow", { tag: "@regression" }, async ({ page }) => {})
+test("all payment methods", { tag: "@regression" }, async ({ page }) => {})
 
 // E2E tests - user journeys
-test("complete user journey", { tag: "@e2e" }, async ({ page }) => {});
+test("complete user journey", { tag: "@e2e" }, async ({ page }) => {})
 ```
 
 ### By Priority
@@ -220,24 +220,24 @@ test(
   {
     tag: ["@critical", "@p0"],
   },
-  async ({ page }) => {}
-);
+  async ({ page }) => {},
+)
 
 test(
   "user preferences",
   {
     tag: ["@p1"],
   },
-  async ({ page }) => {}
-);
+  async ({ page }) => {},
+)
 
 test(
   "theme customization",
   {
     tag: ["@p2"],
   },
-  async ({ page }) => {}
-);
+  async ({ page }) => {},
+)
 ```
 
 ### By Feature Area
@@ -249,11 +249,11 @@ test.describe(
     tag: "@auth",
   },
   () => {
-    test("login @smoke", async ({ page }) => {});
-    test("logout", async ({ page }) => {});
-    test("password reset @slow", async ({ page }) => {});
-  }
-);
+    test("login @smoke", async ({ page }) => {})
+    test("logout", async ({ page }) => {})
+    test("password reset @slow", async ({ page }) => {})
+  },
+)
 
 test.describe(
   "payments",
@@ -261,10 +261,10 @@ test.describe(
     tag: "@payments",
   },
   () => {
-    test("credit card @critical", async ({ page }) => {});
-    test("paypal @critical", async ({ page }) => {});
-  }
-);
+    test("credit card @critical", async ({ page }) => {})
+    test("paypal @critical", async ({ page }) => {})
+  },
+)
 ```
 
 ## Common Tag Categories
@@ -293,6 +293,7 @@ test.describe(
 
 ## Related References
 
-- **Test Organization**: See [test-suite-structure.md](test-suite-structure.md) for structuring tests
+- **Test Organization**: See [test-suite-structure.md](test-suite-structure.md) for structuring
+  tests
 - **Annotations**: See [annotations.md](annotations.md) for skip, fixme, fail, slow
 - **CI/CD Integration**: See [ci-cd.md](../infrastructure-ci-cd/ci-cd.md) for pipeline setup

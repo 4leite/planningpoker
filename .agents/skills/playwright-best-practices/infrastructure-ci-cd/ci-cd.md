@@ -233,17 +233,15 @@ export default defineConfig({
     // Blob for merging shards
     ["blob", { outputDir: "blob-report" }],
   ],
-});
+})
 ```
 
 ### CI-Specific Reporter
 
 ```typescript
 export default defineConfig({
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
-});
+  reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
+})
 ```
 
 ## Sharding
@@ -268,7 +266,7 @@ export default defineConfig({
 
   // For blob reporter to merge later
   reporter: process.env.CI ? [["blob"]] : [["html"]],
-});
+})
 ```
 
 ### Merge Sharded Reports
@@ -284,17 +282,17 @@ npx playwright merge-reports --reporter html ./all-blob-reports
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from "@playwright/test";
-import dotenv from "dotenv";
+import { defineConfig } from "@playwright/test"
+import dotenv from "dotenv"
 
 // Load env file based on environment
-dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
+dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` })
 
 export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL || "http://localhost:3000",
   },
-});
+})
 ```
 
 ### Multiple Environments
@@ -310,7 +308,9 @@ jobs:
       - name: Run tests
         run: npx playwright test
         env:
-          BASE_URL: ${{ matrix.environment == 'staging' && 'https://staging.example.com' || 'https://example.com' }}
+          BASE_URL:
+            ${{ matrix.environment == 'staging' && 'https://staging.example.com' ||
+            'https://example.com' }}
           TEST_USER: ${{ secrets[format('TEST_USER_{0}', matrix.environment)] }}
 ```
 
@@ -328,9 +328,9 @@ jobs:
 ```typescript
 // tests use environment variables
 test("login", async ({ page }) => {
-  await page.getByLabel("Email").fill(process.env.TEST_EMAIL!);
-  await page.getByLabel("Password").fill(process.env.TEST_PASSWORD!);
-});
+  await page.getByLabel("Email").fill(process.env.TEST_EMAIL!)
+  await page.getByLabel("Password").fill(process.env.TEST_PASSWORD!)
+})
 ```
 
 ## Caching
@@ -403,7 +403,7 @@ test("login", async ({ page }) => {
 export default defineConfig({
   grep: process.env.CI ? /@smoke|@critical/ : undefined,
   grepInvert: process.env.CI ? /@flaky/ : undefined,
-});
+})
 ```
 
 ### Project-Based Tag Filtering
@@ -421,7 +421,7 @@ export default defineConfig({
       grepInvert: /@smoke/,
     },
   ],
-});
+})
 ```
 
 ## Best Practices
@@ -448,21 +448,20 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
+  reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
   use: {
     baseURL: process.env.BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
   },
-});
+})
 ```
 
 ## Related References
 
 - **Test tags**: See [test-tags.md](../core/test-tags.md) for tagging and filtering patterns
-- **Performance optimization**: See [performance.md](performance.md) for sharding and parallelization
+- **Performance optimization**: See [performance.md](performance.md) for sharding and
+  parallelization
 - **Debugging CI failures**: See [debugging.md](../debugging/debugging.md) for troubleshooting
 - **Test reporting**: See [debugging.md](../debugging/debugging.md) for trace viewer usage

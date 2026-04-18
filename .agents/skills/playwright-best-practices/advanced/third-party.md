@@ -16,15 +16,15 @@
 test("Google OAuth login", async ({ page }) => {
   // Mock the OAuth callback
   await page.route("**/auth/google/callback**", (route) => {
-    const url = new URL(route.request().url());
+    const url = new URL(route.request().url())
     // Simulate successful OAuth by redirecting with token
     route.fulfill({
       status: 302,
       headers: {
         Location: "/dashboard?token=mock-jwt-token",
       },
-    });
-  });
+    })
+  })
 
   // Mock the token verification endpoint
   await page.route("**/api/auth/verify", (route) =>
@@ -38,31 +38,31 @@ test("Google OAuth login", async ({ page }) => {
         },
       },
     }),
-  );
+  )
 
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in with Google" }).click();
+  await page.goto("/login")
+  await page.getByRole("button", { name: "Sign in with Google" }).click()
 
-  await expect(page.getByText("Welcome, Test User")).toBeVisible();
-});
+  await expect(page.getByText("Welcome, Test User")).toBeVisible()
+})
 ```
 
 ### OAuth Fixture
 
 ```typescript
 // fixtures/oauth.fixture.ts
-type OAuthProvider = "google" | "github" | "microsoft";
+type OAuthProvider = "google" | "github" | "microsoft"
 
 type OAuthUser = {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-};
+  id: string
+  email: string
+  name: string
+  avatar?: string
+}
 
 type OAuthFixtures = {
-  mockOAuth: (provider: OAuthProvider, user: OAuthUser) => Promise<void>;
-};
+  mockOAuth: (provider: OAuthProvider, user: OAuthUser) => Promise<void>
+}
 
 export const test = base.extend<OAuthFixtures>({
   mockOAuth: async ({ page }, use) => {
@@ -73,20 +73,20 @@ export const test = base.extend<OAuthFixtures>({
           status: 302,
           headers: { Location: `/auth/success?provider=${provider}` },
         }),
-      );
+      )
 
       // Mock session/user endpoint
       await page.route("**/api/auth/session", (route) =>
         route.fulfill({
           json: { user, provider, authenticated: true },
         }),
-      );
+      )
 
       // Mock user info endpoint
-      await page.route("**/api/me", (route) => route.fulfill({ json: user }));
-    });
+      await page.route("**/api/me", (route) => route.fulfill({ json: user }))
+    })
   },
-});
+})
 
 // Usage
 test("login with GitHub", async ({ page, mockOAuth }) => {
@@ -94,13 +94,13 @@ test("login with GitHub", async ({ page, mockOAuth }) => {
     id: "gh-123",
     email: "dev@github.com",
     name: "GitHub User",
-  });
+  })
 
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in with GitHub" }).click();
+  await page.goto("/login")
+  await page.getByRole("button", { name: "Sign in with GitHub" }).click()
 
-  await expect(page.getByText("Welcome, GitHub User")).toBeVisible();
-});
+  await expect(page.getByText("Welcome, GitHub User")).toBeVisible()
+})
 ```
 
 ### Mock SAML SSO
@@ -115,8 +115,8 @@ test("SAML SSO login", async ({ page }) => {
         Location: "/dashboard",
         "Set-Cookie": "session=mock-saml-session; Path=/; HttpOnly",
       },
-    });
-  });
+    })
+  })
 
   // Mock session validation
   await page.route("**/api/session", (route) =>
@@ -126,13 +126,13 @@ test("SAML SSO login", async ({ page }) => {
         provider: "saml",
       },
     }),
-  );
+  )
 
-  await page.goto("/login");
-  await page.getByRole("button", { name: "SSO Login" }).click();
+  await page.goto("/login")
+  await page.getByRole("button", { name: "SSO Login" }).click()
 
-  await expect(page).toHaveURL("/dashboard");
-});
+  await expect(page).toHaveURL("/dashboard")
+})
 ```
 
 ## Payment Gateway Mocking
@@ -143,7 +143,7 @@ test("SAML SSO login", async ({ page }) => {
 test("Stripe checkout", async ({ page }) => {
   // Mock Stripe.js
   await page.addInitScript(() => {
-    (window as any).Stripe = () => ({
+    ;(window as any).Stripe = () => ({
       elements: () => ({
         create: () => ({
           mount: () => {},
@@ -157,27 +157,27 @@ test("Stripe checkout", async ({ page }) => {
       createPaymentMethod: async () => ({
         paymentMethod: { id: "pm_mock_123" },
       }),
-    });
-  });
+    })
+  })
 
   // Mock backend payment endpoint
   await page.route("**/api/create-payment-intent", (route) =>
     route.fulfill({
       json: { clientSecret: "pi_mock_123_secret_mock" },
     }),
-  );
+  )
 
   await page.route("**/api/confirm-payment", (route) =>
     route.fulfill({
       json: { success: true, orderId: "order-123" },
     }),
-  );
+  )
 
-  await page.goto("/checkout");
-  await page.getByRole("button", { name: "Pay $99.99" }).click();
+  await page.goto("/checkout")
+  await page.getByRole("button", { name: "Pay $99.99" }).click()
 
-  await expect(page.getByText("Payment successful")).toBeVisible();
-});
+  await expect(page.getByText("Payment successful")).toBeVisible()
+})
 ```
 
 ### Mock PayPal
@@ -186,38 +186,38 @@ test("Stripe checkout", async ({ page }) => {
 test("PayPal checkout", async ({ page }) => {
   // Mock PayPal SDK
   await page.addInitScript(() => {
-    (window as any).paypal = {
+    ;(window as any).paypal = {
       Buttons: () => ({
         render: () => Promise.resolve(),
         isEligible: () => true,
       }),
       FUNDING: { PAYPAL: "paypal", CARD: "card" },
-    };
-  });
+    }
+  })
 
   // Mock PayPal order creation
   await page.route("**/api/paypal/create-order", (route) =>
     route.fulfill({
       json: { orderId: "PAYPAL-ORDER-123" },
     }),
-  );
+  )
 
   // Mock PayPal capture
   await page.route("**/api/paypal/capture", (route) =>
     route.fulfill({
       json: { success: true, transactionId: "TXN-123" },
     }),
-  );
+  )
 
-  await page.goto("/checkout");
+  await page.goto("/checkout")
 
   // Simulate PayPal approval callback
   await page.evaluate(() => {
-    (window as any).onPayPalApprove?.({ orderID: "PAYPAL-ORDER-123" });
-  });
+    ;(window as any).onPayPalApprove?.({ orderID: "PAYPAL-ORDER-123" })
+  })
 
-  await expect(page.getByText("Order confirmed")).toBeVisible();
-});
+  await expect(page.getByText("Order confirmed")).toBeVisible()
+})
 ```
 
 ### Payment Fixture
@@ -225,47 +225,47 @@ test("PayPal checkout", async ({ page }) => {
 ```typescript
 // fixtures/payment.fixture.ts
 type PaymentFixtures = {
-  mockStripe: (options?: { failPayment?: boolean }) => Promise<void>;
-};
+  mockStripe: (options?: { failPayment?: boolean }) => Promise<void>
+}
 
 export const test = base.extend<PaymentFixtures>({
   mockStripe: async ({ page }, use) => {
     await use(async (options = {}) => {
       await page.addInitScript(
         ([shouldFail]) => {
-          (window as any).Stripe = () => ({
+          ;(window as any).Stripe = () => ({
             elements: () => ({
               create: () => ({
                 mount: () => {},
                 on: (event: string, handler: Function) => {
-                  if (event === "ready") setTimeout(handler, 100);
+                  if (event === "ready") setTimeout(handler, 100)
                 },
                 destroy: () => {},
               }),
             }),
             confirmCardPayment: async () => {
               if (shouldFail) {
-                return { error: { message: "Card declined" } };
+                return { error: { message: "Card declined" } }
               }
-              return { paymentIntent: { status: "succeeded" } };
+              return { paymentIntent: { status: "succeeded" } }
             },
-          });
+          })
         },
         [options.failPayment],
-      );
-    });
+      )
+    })
   },
-});
+})
 
 // Usage
 test("handles declined card", async ({ page, mockStripe }) => {
-  await mockStripe({ failPayment: true });
+  await mockStripe({ failPayment: true })
 
-  await page.goto("/checkout");
-  await page.getByRole("button", { name: "Pay" }).click();
+  await page.goto("/checkout")
+  await page.getByRole("button", { name: "Pay" }).click()
 
-  await expect(page.getByText("Card declined")).toBeVisible();
-});
+  await expect(page.getByText("Card declined")).toBeVisible()
+})
 ```
 
 ## Email Verification
@@ -274,42 +274,42 @@ test("handles declined card", async ({ page, mockStripe }) => {
 
 ```typescript
 test("email verification flow", async ({ page, request }) => {
-  let verificationToken: string;
+  let verificationToken: string
 
   // Capture the verification email
   await page.route("**/api/send-verification", async (route) => {
-    const body = route.request().postDataJSON();
-    verificationToken = `mock-token-${Date.now()}`;
+    const body = route.request().postDataJSON()
+    verificationToken = `mock-token-${Date.now()}`
 
     // Don't actually send email, just store token
     route.fulfill({
       json: { sent: true, messageId: "msg-123" },
-    });
-  });
+    })
+  })
 
   // Mock token verification
   await page.route("**/api/verify-email**", (route) => {
-    const url = new URL(route.request().url());
-    const token = url.searchParams.get("token");
+    const url = new URL(route.request().url())
+    const token = url.searchParams.get("token")
 
     if (token === verificationToken) {
-      route.fulfill({ json: { verified: true } });
+      route.fulfill({ json: { verified: true } })
     } else {
-      route.fulfill({ status: 400, json: { error: "Invalid token" } });
+      route.fulfill({ status: 400, json: { error: "Invalid token" } })
     }
-  });
+  })
 
-  await page.goto("/signup");
-  await page.getByLabel("Email").fill("test@example.com");
-  await page.getByRole("button", { name: "Sign Up" }).click();
+  await page.goto("/signup")
+  await page.getByLabel("Email").fill("test@example.com")
+  await page.getByRole("button", { name: "Sign Up" }).click()
 
-  await expect(page.getByText("Check your email")).toBeVisible();
+  await expect(page.getByText("Check your email")).toBeVisible()
 
   // Simulate clicking email link
-  await page.goto(`/verify?token=${verificationToken}`);
+  await page.goto(`/verify?token=${verificationToken}`)
 
-  await expect(page.getByText("Email verified")).toBeVisible();
-});
+  await expect(page.getByText("Email verified")).toBeVisible()
+})
 ```
 
 ### Use Mailinator/Temp Mail
@@ -317,8 +317,8 @@ test("email verification flow", async ({ page, request }) => {
 ```typescript
 // fixtures/email.fixture.ts
 type EmailFixtures = {
-  getVerificationEmail: (inbox: string) => Promise<{ link: string }>;
-};
+  getVerificationEmail: (inbox: string) => Promise<{ link: string }>
+}
 
 export const test = base.extend<EmailFixtures>({
   getVerificationEmail: async ({ request }, use) => {
@@ -331,10 +331,10 @@ export const test = base.extend<EmailFixtures>({
             Authorization: `Bearer ${process.env.MAILINATOR_API_KEY}`,
           },
         },
-      );
+      )
 
-      const messages = await response.json();
-      const latest = messages.msgs[0];
+      const messages = await response.json()
+      const latest = messages.msgs[0]
 
       // Get full message
       const msgResponse = await request.get(
@@ -344,18 +344,16 @@ export const test = base.extend<EmailFixtures>({
             Authorization: `Bearer ${process.env.MAILINATOR_API_KEY}`,
           },
         },
-      );
+      )
 
-      const message = await msgResponse.json();
+      const message = await msgResponse.json()
 
       // Extract verification link from HTML
-      const linkMatch = message.parts[0].body.match(
-        /href="([^"]*verify[^"]*)"/,
-      );
-      return { link: linkMatch?.[1] || "" };
-    });
+      const linkMatch = message.parts[0].body.match(/href="([^"]*verify[^"]*)"/)
+      return { link: linkMatch?.[1] || "" }
+    })
   },
-});
+})
 ```
 
 ## SMS Verification
@@ -364,38 +362,38 @@ export const test = base.extend<EmailFixtures>({
 
 ```typescript
 test("SMS verification", async ({ page }) => {
-  let smsCode: string;
+  let smsCode: string
 
   // Capture SMS send
   await page.route("**/api/send-sms", (route) => {
-    smsCode = Math.random().toString().slice(2, 8); // 6-digit code
+    smsCode = Math.random().toString().slice(2, 8) // 6-digit code
 
     route.fulfill({
       json: { sent: true, messageId: "sms-123" },
-    });
-  });
+    })
+  })
 
   // Mock code verification
   await page.route("**/api/verify-sms", (route) => {
-    const body = route.request().postDataJSON();
+    const body = route.request().postDataJSON()
 
     if (body.code === smsCode) {
-      route.fulfill({ json: { verified: true } });
+      route.fulfill({ json: { verified: true } })
     } else {
-      route.fulfill({ status: 400, json: { error: "Invalid code" } });
+      route.fulfill({ status: 400, json: { error: "Invalid code" } })
     }
-  });
+  })
 
-  await page.goto("/verify-phone");
-  await page.getByLabel("Phone").fill("+1234567890");
-  await page.getByRole("button", { name: "Send Code" }).click();
+  await page.goto("/verify-phone")
+  await page.getByLabel("Phone").fill("+1234567890")
+  await page.getByRole("button", { name: "Send Code" }).click()
 
   // Enter the code
-  await page.getByLabel("Verification Code").fill(smsCode);
-  await page.getByRole("button", { name: "Verify" }).click();
+  await page.getByLabel("Verification Code").fill(smsCode)
+  await page.getByRole("button", { name: "Verify" }).click()
 
-  await expect(page.getByText("Phone verified")).toBeVisible();
-});
+  await expect(page.getByText("Phone verified")).toBeVisible()
+})
 ```
 
 ## Analytics & Tracking
@@ -408,36 +406,36 @@ test.beforeEach(async ({ page }) => {
   await page.route(
     /google-analytics|googletagmanager|facebook|hotjar|segment|mixpanel|amplitude/,
     (route) => route.abort(),
-  );
-});
+  )
+})
 ```
 
 ### Mock Analytics for Verification
 
 ```typescript
 test("tracks purchase event", async ({ page }) => {
-  const analyticsEvents: any[] = [];
+  const analyticsEvents: any[] = []
 
   // Capture analytics calls
   await page.route("**/api/analytics/**", (route) => {
-    analyticsEvents.push(route.request().postDataJSON());
-    route.fulfill({ status: 200 });
-  });
+    analyticsEvents.push(route.request().postDataJSON())
+    route.fulfill({ status: 200 })
+  })
 
   // Mock analytics SDK
   await page.addInitScript(() => {
-    (window as any).analytics = {
+    ;(window as any).analytics = {
       track: (event: string, props: any) => {
         fetch("/api/analytics/track", {
           method: "POST",
           body: JSON.stringify({ event, props }),
-        });
+        })
       },
-    };
-  });
+    }
+  })
 
-  await page.goto("/checkout");
-  await page.getByRole("button", { name: "Complete Purchase" }).click();
+  await page.goto("/checkout")
+  await page.getByRole("button", { name: "Complete Purchase" }).click()
 
   // Verify analytics event was sent
   expect(analyticsEvents).toContainEqual(
@@ -445,8 +443,8 @@ test("tracks purchase event", async ({ page }) => {
       event: "Purchase Completed",
       props: expect.objectContaining({ amount: expect.any(Number) }),
     }),
-  );
-});
+  )
+})
 ```
 
 ## Anti-Patterns to Avoid

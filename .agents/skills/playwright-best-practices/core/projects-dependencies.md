@@ -15,7 +15,7 @@
 
 ```typescript
 // playwright.config.ts
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test"
 
 export default defineConfig({
   projects: [
@@ -32,7 +32,7 @@ export default defineConfig({
       use: { ...devices["Desktop Safari"] },
     },
   ],
-});
+})
 ```
 
 ### Environment-Based Projects
@@ -59,7 +59,7 @@ export default defineConfig({
       },
     },
   ],
-});
+})
 ```
 
 ### Test Type Projects
@@ -86,7 +86,7 @@ export default defineConfig({
       },
     },
   ],
-});
+})
 ```
 
 ## Project Dependencies
@@ -120,7 +120,7 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-});
+})
 ```
 
 ### Multiple Auth States
@@ -161,7 +161,7 @@ export default defineConfig({
       dependencies: ["setup-admin", "setup-user"],
     },
   ],
-});
+})
 ```
 
 ### Chained Dependencies
@@ -196,22 +196,24 @@ export default defineConfig({
       dependencies: ["seed-setup"],
     },
   ],
-});
+})
 ```
 
 ## Setup Projects
 
 ### Authentication Setup
 
-Setup projects are the recommended way to handle authentication. They run before your main test projects and can use Playwright fixtures.
+Setup projects are the recommended way to handle authentication. They run before your main test
+projects and can use Playwright fixtures.
 
-> **For complete authentication patterns** (storage state, multiple auth states, auth fixtures), see [fixtures-hooks.md](fixtures-hooks.md#authentication-patterns).
+> **For complete authentication patterns** (storage state, multiple auth states, auth fixtures), see
+> [fixtures-hooks.md](fixtures-hooks.md#authentication-patterns).
 
 ### Data Seeding Setup
 
 ```typescript
 // seed.setup.ts
-import { test as setup } from "@playwright/test";
+import { test as setup } from "@playwright/test"
 
 setup("seed test data", async ({ request }) => {
   // Create test data via API
@@ -221,20 +223,20 @@ setup("seed test data", async ({ request }) => {
       products: 50,
       orders: 100,
     },
-  });
-});
+  })
+})
 ```
 
 ### Cleanup Setup
 
 ```typescript
 // cleanup.setup.ts
-import { test as setup } from "@playwright/test";
+import { test as setup } from "@playwright/test"
 
 setup("cleanup previous run", async ({ request }) => {
   // Clean up data from previous test runs
-  await request.delete("/api/test/cleanup");
-});
+  await request.delete("/api/test/cleanup")
+})
 ```
 
 ## Filtering & Running Projects
@@ -278,7 +280,7 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-});
+})
 ```
 
 ## Sharing Configuration
@@ -294,7 +296,7 @@ const baseConfig = {
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
-};
+}
 
 export default defineConfig({
   ...baseConfig,
@@ -314,7 +316,7 @@ export default defineConfig({
       },
     },
   ],
-});
+})
 ```
 
 ### Shared Project Settings
@@ -327,7 +329,7 @@ const sharedBrowserConfig = {
     video: "on-first-retry",
     trace: "on-first-retry",
   },
-};
+}
 
 export default defineConfig({
   projects: [
@@ -348,7 +350,7 @@ export default defineConfig({
       },
     },
   ],
-});
+})
 ```
 
 ## Advanced Patterns
@@ -361,14 +363,14 @@ const projects = [
     name: "chromium",
     use: { ...devices["Desktop Chrome"] },
   },
-];
+]
 
 // Add Firefox only in CI
 if (process.env.CI) {
   projects.push({
     name: "firefox",
     use: { ...devices["Desktop Firefox"] },
-  });
+  })
 }
 
 // Add mobile only for specific test dirs
@@ -376,10 +378,10 @@ if (process.env.TEST_MOBILE) {
   projects.push({
     name: "mobile",
     use: { ...devices["iPhone 14"] },
-  });
+  })
 }
 
-export default defineConfig({ projects });
+export default defineConfig({ projects })
 ```
 
 ### Project Metadata
@@ -397,13 +399,13 @@ export default defineConfig({
       },
     },
   ],
-});
+})
 
 // Access in test
 test("example", async ({ page }, testInfo) => {
-  const { platform, priority } = testInfo.project.metadata;
-  console.log(`Running on ${platform} with ${priority} priority`);
-});
+  const { platform, priority } = testInfo.project.metadata
+  console.log(`Running on ${platform} with ${priority} priority`)
+})
 ```
 
 ### Teardown Projects
@@ -425,16 +427,16 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-});
+})
 ```
 
 ```typescript
 // cleanup.teardown.ts
-import { test as teardown } from "@playwright/test";
+import { test as teardown } from "@playwright/test"
 
 teardown("cleanup", async ({ request }) => {
-  await request.delete("/api/test/data");
-});
+  await request.delete("/api/test/data")
+})
 ```
 
 ## Anti-Patterns to Avoid

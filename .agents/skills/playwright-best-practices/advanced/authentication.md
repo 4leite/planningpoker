@@ -9,17 +9,18 @@
 5. [Troubleshooting](#troubleshooting)
 6. [Related](#related)
 
-> **When to use**: Apps with login, session management, or protected routes. Authentication is the most common source of slow test suites.
+> **When to use**: Apps with login, session management, or protected routes. Authentication is the
+> most common source of slow test suites.
 
 ## Quick Reference
 
 ```typescript
 // Storage state reuse — the #1 pattern for fast auth
-await page.goto("/login");
-await page.getByLabel("Username").fill("testuser@example.com");
-await page.getByLabel("Password").fill("secretPass123");
-await page.getByRole("button", { name: "Log in" }).click();
-await page.context().storageState({ path: ".auth/session.json" });
+await page.goto("/login")
+await page.getByLabel("Username").fill("testuser@example.com")
+await page.getByLabel("Password").fill("secretPass123")
+await page.getByRole("button", { name: "Log in" }).click()
+await page.context().storageState({ path: ".auth/session.json" })
 
 // Reuse in config — every test starts authenticated
 {
@@ -29,97 +30,98 @@ await page.context().storageState({ path: ".auth/session.json" });
 }
 
 // API login — skip the UI entirely
-const context = await browser.newContext();
+const context = await browser.newContext()
 const response = await context.request.post("/api/auth/login", {
   data: { email: "testuser@example.com", password: "secretPass123" },
-});
-await context.storageState({ path: ".auth/session.json" });
+})
+await context.storageState({ path: ".auth/session.json" })
 ```
 
 ## Patterns
 
 ### Storage State Reuse
 
-**Use when**: You need authenticated tests and want to avoid logging in before every test.
-**Avoid when**: Tests require completely fresh sessions, or you are testing the login flow itself.
+**Use when**: You need authenticated tests and want to avoid logging in before every test. **Avoid
+when**: Tests require completely fresh sessions, or you are testing the login flow itself.
 
-`storageState` serializes cookies and localStorage to a JSON file. Load it in any browser context to start authenticated instantly.
+`storageState` serializes cookies and localStorage to a JSON file. Load it in any browser context to
+start authenticated instantly.
 
 ```typescript
 // scripts/generate-auth.ts — run once to generate the state file
-import { chromium } from "@playwright/test";
+import { chromium } from "@playwright/test"
 
 async function generateAuthState() {
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  const browser = await chromium.launch()
+  const context = await browser.newContext()
+  const page = await context.newPage()
 
-  await page.goto("http://localhost:4000/login");
-  await page.getByLabel("Username").fill("testuser@example.com");
-  await page.getByLabel("Password").fill("secretPass123");
-  await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL("/home");
+  await page.goto("http://localhost:4000/login")
+  await page.getByLabel("Username").fill("testuser@example.com")
+  await page.getByLabel("Password").fill("secretPass123")
+  await page.getByRole("button", { name: "Log in" }).click()
+  await page.waitForURL("/home")
 
-  await context.storageState({ path: ".auth/session.json" });
-  await browser.close();
+  await context.storageState({ path: ".auth/session.json" })
+  await browser.close()
 }
 
-generateAuthState();
+generateAuthState()
 ```
 
 ```typescript
 // playwright.config.ts — load saved state for all tests
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   use: {
     baseURL: "http://localhost:4000",
     storageState: ".auth/session.json",
   },
-});
+})
 ```
 
 ```typescript
 // tests/home.spec.ts — test starts already logged in
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test("authenticated user sees home page", async ({ page }) => {
-  await page.goto("/home");
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-});
+  await page.goto("/home")
+  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible()
+})
 ```
 
 ### Global Setup Authentication
 
-**Use when**: You want to authenticate once before the entire test suite runs.
-**Avoid when**: Different tests need different users, or your tokens expire faster than your suite runs.
+**Use when**: You want to authenticate once before the entire test suite runs. **Avoid when**:
+Different tests need different users, or your tokens expire faster than your suite runs.
 
 ```typescript
 // global-setup.ts
-import { chromium, type FullConfig } from "@playwright/test";
+import { chromium, type FullConfig } from "@playwright/test"
 
 async function globalSetup(config: FullConfig) {
-  const { baseURL } = config.projects[0].use;
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  const { baseURL } = config.projects[0].use
+  const browser = await chromium.launch()
+  const context = await browser.newContext()
+  const page = await context.newPage()
 
-  await page.goto(`${baseURL}/login`);
-  await page.getByLabel("Username").fill(process.env.TEST_USER_EMAIL!);
-  await page.getByLabel("Password").fill(process.env.TEST_USER_PASSWORD!);
-  await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL("**/home");
+  await page.goto(`${baseURL}/login`)
+  await page.getByLabel("Username").fill(process.env.TEST_USER_EMAIL!)
+  await page.getByLabel("Password").fill(process.env.TEST_USER_PASSWORD!)
+  await page.getByRole("button", { name: "Log in" }).click()
+  await page.waitForURL("**/home")
 
-  await context.storageState({ path: ".auth/session.json" });
-  await browser.close();
+  await context.storageState({ path: ".auth/session.json" })
+  await browser.close()
 }
 
-export default globalSetup;
+export default globalSetup
 ```
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   globalSetup: require.resolve("./global-setup"),
@@ -127,72 +129,74 @@ export default defineConfig({
     baseURL: "http://localhost:4000",
     storageState: ".auth/session.json",
   },
-});
+})
 ```
 
 Add `.auth/` to `.gitignore`. Auth state files contain session tokens and should never be committed.
 
 ### Per-Worker Authentication
 
-**Use when**: Each parallel worker needs its own authenticated session to avoid race conditions for tests that modify server-side state.
-**Avoid when**: Tests are read-only and a modifying shared session is safe, you can use a single shared account.
+**Use when**: Each parallel worker needs its own authenticated session to avoid race conditions for
+tests that modify server-side state. **Avoid when**: Tests are read-only and a modifying shared
+session is safe, you can use a single shared account.
 
-> **Sharded runs**: `parallelIndex` resets per shard, so different shards can have workers with the same index. To avoid collisions, include the shard identifier in the username (e.g., `worker-${SHARD_INDEX}-${parallelIndex}@example.com`) by passing a `SHARD_INDEX` environment variable from your CI matrix.
+> **Sharded runs**: `parallelIndex` resets per shard, so different shards can have workers with the
+> same index. To avoid collisions, include the shard identifier in the username (e.g.,
+> `worker-${SHARD_INDEX}-${parallelIndex}@example.com`) by passing a `SHARD_INDEX` environment
+> variable from your CI matrix.
 
 ```typescript
 // fixtures/auth.ts
-import { test as base, type BrowserContext } from "@playwright/test";
+import { test as base, type BrowserContext } from "@playwright/test"
 
 type AuthFixtures = {
-  authenticatedContext: BrowserContext;
-};
+  authenticatedContext: BrowserContext
+}
 
 export const test = base.extend<{}, AuthFixtures>({
   authenticatedContext: [
     async ({ browser }, use) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      const context = await browser.newContext()
+      const page = await context.newPage()
 
-      await page.goto("/login");
-      await page
-        .getByLabel("Username")
-        .fill(`worker-${test.info().parallelIndex}@example.com`);
-      await page.getByLabel("Password").fill("secretPass123");
-      await page.getByRole("button", { name: "Log in" }).click();
-      await page.waitForURL("/home");
-      await page.close();
+      await page.goto("/login")
+      await page.getByLabel("Username").fill(`worker-${test.info().parallelIndex}@example.com`)
+      await page.getByLabel("Password").fill("secretPass123")
+      await page.getByRole("button", { name: "Log in" }).click()
+      await page.waitForURL("/home")
+      await page.close()
 
-      await use(context);
-      await context.close();
+      await use(context)
+      await context.close()
     },
     { scope: "worker" },
   ],
-});
+})
 
-export { expect } from "@playwright/test";
+export { expect } from "@playwright/test"
 ```
 
 ```typescript
 // tests/settings.spec.ts
-import { test, expect } from "../fixtures/auth";
+import { test, expect } from "../fixtures/auth"
 
 test("update display name", async ({ authenticatedContext }) => {
-  const page = await authenticatedContext.newPage();
-  await page.goto("/settings/profile");
-  await page.getByLabel("Display name").fill("Updated Name");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Profile saved")).toBeVisible();
-});
+  const page = await authenticatedContext.newPage()
+  await page.goto("/settings/profile")
+  await page.getByLabel("Display name").fill("Updated Name")
+  await page.getByRole("button", { name: "Save" }).click()
+  await expect(page.getByText("Profile saved")).toBeVisible()
+})
 ```
 
 ### Multiple Roles
 
-**Use when**: Your app has role-based access control and you need to test different permission levels.
-**Avoid when**: Your app has a single user role.
+**Use when**: Your app has role-based access control and you need to test different permission
+levels. **Avoid when**: Your app has a single user role.
 
 ```typescript
 // global-setup.ts — authenticate all roles
-import { chromium, type FullConfig } from "@playwright/test";
+import { chromium, type FullConfig } from "@playwright/test"
 
 const accounts = [
   {
@@ -210,33 +214,33 @@ const accounts = [
     email: "guest@example.com",
     password: process.env.GUEST_PASSWORD!,
   },
-];
+]
 
 async function globalSetup(config: FullConfig) {
-  const { baseURL } = config.projects[0].use;
+  const { baseURL } = config.projects[0].use
 
   for (const { role, email, password } of accounts) {
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await context.newPage();
+    const browser = await chromium.launch()
+    const context = await browser.newContext()
+    const page = await context.newPage()
 
-    await page.goto(`${baseURL}/login`);
-    await page.getByLabel("Username").fill(email);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Log in" }).click();
-    await page.waitForURL("**/home");
+    await page.goto(`${baseURL}/login`)
+    await page.getByLabel("Username").fill(email)
+    await page.getByLabel("Password").fill(password)
+    await page.getByRole("button", { name: "Log in" }).click()
+    await page.waitForURL("**/home")
 
-    await context.storageState({ path: `.auth/${role}.json` });
-    await browser.close();
+    await context.storageState({ path: `.auth/${role}.json` })
+    await browser.close()
   }
 }
 
-export default globalSetup;
+export default globalSetup
 ```
 
 ```typescript
 // playwright.config.ts — one project per role
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   globalSetup: require.resolve("./global-setup"),
@@ -262,131 +266,132 @@ export default defineConfig({
       testMatch: "**/*.anon.spec.ts",
     },
   ],
-});
+})
 ```
 
 ```typescript
 // tests/admin-panel.admin.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test("admin can access user management", async ({ page }) => {
-  await page.goto("/admin/users");
-  await expect(
-    page.getByRole("heading", { name: "User Management" })
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Remove user" })).toBeEnabled();
-});
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Remove user" })).toBeEnabled()
+})
 ```
 
 ```typescript
 // tests/admin-panel.guest.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test("guest cannot access admin panel", async ({ page }) => {
-  await page.goto("/admin/users");
-  await expect(page.getByText("Access denied")).toBeVisible();
-});
+  await page.goto("/admin/users")
+  await expect(page.getByText("Access denied")).toBeVisible()
+})
 ```
 
-**Alternative**: Use a fixture that accepts a role parameter when you need role switching within a single spec file.
+**Alternative**: Use a fixture that accepts a role parameter when you need role switching within a
+single spec file.
 
 ```typescript
 // fixtures/auth.ts — role-based fixture
-import { test as base, type Page } from "@playwright/test";
-import fs from "fs";
+import { test as base, type Page } from "@playwright/test"
+import fs from "fs"
 
 type RoleFixtures = {
-  loginAs: (role: "admin" | "member" | "guest") => Promise<Page>;
-};
+  loginAs: (role: "admin" | "member" | "guest") => Promise<Page>
+}
 
 export const test = base.extend<RoleFixtures>({
   loginAs: async ({ browser }, use) => {
-    const pages: Page[] = [];
+    const pages: Page[] = []
 
     await use(async (role) => {
-      const statePath = `.auth/${role}.json`;
+      const statePath = `.auth/${role}.json`
       if (!fs.existsSync(statePath)) {
-        throw new Error(
-          `Auth state for role "${role}" not found at ${statePath}`
-        );
+        throw new Error(`Auth state for role "${role}" not found at ${statePath}`)
       }
-      const context = await browser.newContext({ storageState: statePath });
-      const page = await context.newPage();
-      pages.push(page);
-      return page;
-    });
+      const context = await browser.newContext({ storageState: statePath })
+      const page = await context.newPage()
+      pages.push(page)
+      return page
+    })
 
     for (const page of pages) {
-      await page.context().close();
+      await page.context().close()
     }
   },
-});
+})
 
-export { expect } from "@playwright/test";
+export { expect } from "@playwright/test"
 ```
 
 ```typescript
 // tests/role-comparison.spec.ts
-import { test, expect } from "../fixtures/auth";
+import { test, expect } from "../fixtures/auth"
 
 test("admin sees remove button, guest does not", async ({ loginAs }) => {
-  const adminPage = await loginAs("admin");
-  await adminPage.goto("/admin/users");
-  await expect(
-    adminPage.getByRole("button", { name: "Remove user" })
-  ).toBeVisible();
+  const adminPage = await loginAs("admin")
+  await adminPage.goto("/admin/users")
+  await expect(adminPage.getByRole("button", { name: "Remove user" })).toBeVisible()
 
-  const guestPage = await loginAs("guest");
-  await guestPage.goto("/admin/users");
-  await expect(guestPage.getByText("Access denied")).toBeVisible();
-});
+  const guestPage = await loginAs("guest")
+  await guestPage.goto("/admin/users")
+  await expect(guestPage.getByText("Access denied")).toBeVisible()
+})
 ```
 
 ### OAuth/SSO Mocking
 
-**Use when**: Your app authenticates via a third-party OAuth provider and you cannot hit the real provider in tests.
-**Avoid when**: You have a dedicated test tenant on the OAuth provider.
+**Use when**: Your app authenticates via a third-party OAuth provider and you cannot hit the real
+provider in tests. **Avoid when**: You have a dedicated test tenant on the OAuth provider.
 
 A typical OAuth flow works like this:
 
-1. User clicks "Sign in with Provider" → browser navigates to `https://accounts.provider.com/authorize?...`
-2. User authenticates on the provider's page → provider redirects back to your app's **callback route** (e.g. `http://localhost:4000/auth/callback?code=ABC&state=XYZ`)
-3. Your backend exchanges the `code` for an access token, creates a session, and redirects the user to a logged-in page
+1. User clicks "Sign in with Provider" → browser navigates to
+   `https://accounts.provider.com/authorize?...`
+2. User authenticates on the provider's page → provider redirects back to your app's **callback
+   route** (e.g. `http://localhost:4000/auth/callback?code=ABC&state=XYZ`)
+3. Your backend exchanges the `code` for an access token, creates a session, and redirects the user
+   to a logged-in page
 
-In tests you can short-circuit step 2 with `page.route()`: intercept the outbound request to the provider and respond with a `302` redirect straight to your callback route, supplying a mock `code` and `state`. Your backend still executes its normal callback handler — the only part that's mocked is the provider's authorization page.
+In tests you can short-circuit step 2 with `page.route()`: intercept the outbound request to the
+provider and respond with a `302` redirect straight to your callback route, supplying a mock `code`
+and `state`. Your backend still executes its normal callback handler — the only part that's mocked
+is the provider's authorization page.
 
-For cases where you want to skip the browser redirect entirely, a second approach calls a **test-only API endpoint** that creates the session server-side and returns the session cookie directly.
+For cases where you want to skip the browser redirect entirely, a second approach calls a
+**test-only API endpoint** that creates the session server-side and returns the session cookie
+directly.
 
 ```typescript
 // tests/oauth-login.spec.ts — mock the callback route
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test("login via mocked OAuth flow", async ({ page }) => {
   await page.route("https://accounts.provider.com/**", async (route) => {
-    const callbackUrl = new URL("http://localhost:4000/auth/callback");
-    callbackUrl.searchParams.set("code", "mock-auth-code-xyz");
-    callbackUrl.searchParams.set("state", "expected-state-value");
+    const callbackUrl = new URL("http://localhost:4000/auth/callback")
+    callbackUrl.searchParams.set("code", "mock-auth-code-xyz")
+    callbackUrl.searchParams.set("state", "expected-state-value")
     await route.fulfill({
       status: 302,
       headers: { location: callbackUrl.toString() },
-    });
-  });
+    })
+  })
 
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Sign in with Provider" }).click();
+  await page.goto("/login")
+  await page.getByRole("button", { name: "Sign in with Provider" }).click()
 
-  await page.waitForURL("/home");
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-});
+  await page.waitForURL("/home")
+  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible()
+})
 ```
 
 ```typescript
 // tests/oauth-login.spec.ts — API-based session injection
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
-test("bypass OAuth entirely via API session injection", async ({
-  page,
-}) => {
+test("bypass OAuth entirely via API session injection", async ({ page }) => {
   // Call a test-only endpoint that creates a session without OAuth
   const response = await page.request.post("/api/test/create-session", {
     data: {
@@ -394,27 +399,28 @@ test("bypass OAuth entirely via API session injection", async ({
       provider: "provider",
       role: "member",
     },
-  });
-  expect(response.ok()).toBeTruthy();
+  })
+  expect(response.ok()).toBeTruthy()
 
-  await page.context().storageState({ path: ".auth/oauth-user.json" });
-  await page.goto("/home");
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-});
+  await page.context().storageState({ path: ".auth/oauth-user.json" })
+  await page.goto("/home")
+  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible()
+})
 ```
 
-**Backend requirement**: Your backend must expose a test-only session creation endpoint (guarded by `NODE_ENV=test`) or accept a known test OAuth code.
+**Backend requirement**: Your backend must expose a test-only session creation endpoint (guarded by
+`NODE_ENV=test`) or accept a known test OAuth code.
 
 ### MFA Handling
 
-**Use when**: Your app requires two-factor authentication (TOTP, SMS, email codes).
-**Avoid when**: MFA is optional and you can disable it for test accounts.
+**Use when**: Your app requires two-factor authentication (TOTP, SMS, email codes). **Avoid when**:
+MFA is optional and you can disable it for test accounts.
 
 **Strategy 1**: Generate real TOTP codes from a shared secret.
 
 ```typescript
 // helpers/totp.ts
-import * as OTPAuth from "otpauth";
+import * as OTPAuth from "otpauth"
 
 export function generateTOTP(secret: string): string {
   const totp = new OTPAuth.TOTP({
@@ -422,85 +428,86 @@ export function generateTOTP(secret: string): string {
     digits: 6,
     period: 30,
     algorithm: "SHA1",
-  });
-  return totp.generate();
+  })
+  return totp.generate()
 }
 ```
 
 ```typescript
 // tests/mfa-login.spec.ts
-import { test, expect } from "@playwright/test";
-import { generateTOTP } from "../helpers/totp";
+import { test, expect } from "@playwright/test"
+import { generateTOTP } from "../helpers/totp"
 
 test("login with TOTP two-factor auth", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Username").fill("mfa-user@example.com");
-  await page.getByLabel("Password").fill("secretPass123");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.goto("/login")
+  await page.getByLabel("Username").fill("mfa-user@example.com")
+  await page.getByLabel("Password").fill("secretPass123")
+  await page.getByRole("button", { name: "Log in" }).click()
 
-  await expect(page.getByText("Enter your authentication code")).toBeVisible();
+  await expect(page.getByText("Enter your authentication code")).toBeVisible()
 
-  const code = generateTOTP(process.env.MFA_TOTP_SECRET!);
-  await page.getByLabel("Authentication code").fill(code);
-  await page.getByRole("button", { name: "Verify" }).click();
+  const code = generateTOTP(process.env.MFA_TOTP_SECRET!)
+  await page.getByLabel("Authentication code").fill(code)
+  await page.getByRole("button", { name: "Verify" }).click()
 
-  await page.waitForURL("/home");
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-});
+  await page.waitForURL("/home")
+  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible()
+})
 ```
 
-**Strategy 2**: Mock MFA at the backend level. Have your backend accept a known bypass code (e.g., `000000`) when `NODE_ENV=test`.
+**Strategy 2**: Mock MFA at the backend level. Have your backend accept a known bypass code (e.g.,
+`000000`) when `NODE_ENV=test`.
 
 **Strategy 3**: Disable MFA for test accounts at the infrastructure level.
 
 ### Session Refresh
 
-**Use when**: Your tokens expire during long test runs.
-**Avoid when**: Your test suite runs quickly and tokens outlast the entire run.
+**Use when**: Your tokens expire during long test runs. **Avoid when**: Your test suite runs quickly
+and tokens outlast the entire run.
 
 ```typescript
 // fixtures/auth-with-refresh.ts
-import { test as base, type BrowserContext } from "@playwright/test";
-import fs from "fs";
+import { test as base, type BrowserContext } from "@playwright/test"
+import fs from "fs"
 
 type AuthFixtures = {
-  authenticatedPage: import("@playwright/test").Page;
-};
+  authenticatedPage: import("@playwright/test").Page
+}
 
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ browser }, use) => {
-    const statePath = ".auth/session.json";
+    const statePath = ".auth/session.json"
 
-    let context: BrowserContext;
+    let context: BrowserContext
     if (fs.existsSync(statePath)) {
-      context = await browser.newContext({ storageState: statePath });
-      const page = await context.newPage();
+      context = await browser.newContext({ storageState: statePath })
+      const page = await context.newPage()
 
-      const response = await page.request.get("/api/auth/me");
+      const response = await page.request.get("/api/auth/me")
       if (response.ok()) {
-        await use(page);
-        await context.close();
-        return;
+        await use(page)
+        await context.close()
+        return
       }
-      await context.close();
+      await context.close()
     }
 
-    context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto("/login");
-    await page.getByLabel("Username").fill(process.env.TEST_USER_EMAIL!);
-    await page.getByLabel("Password").fill(process.env.TEST_USER_PASSWORD!);
-    await page.getByRole("button", { name: "Log in" }).click();
-    await page.waitForURL("/home");
+    context = await browser.newContext()
+    const page = await context.newPage()
+    await page.goto("/login")
+    await page.getByLabel("Username").fill(process.env.TEST_USER_EMAIL!)
+    await page.getByLabel("Password").fill(process.env.TEST_USER_PASSWORD!)
+    await page.getByRole("button", { name: "Log in" }).click()
+    await page.waitForURL("/home")
 
-    await context.storageState({ path: statePath });
+    await context.storageState({ path: statePath })
 
-    await use(page);
-    await context.close();
+    await use(page)
+    await context.close()
   },
-});
+})
 
-export { expect } from "@playwright/test";
+export { expect } from "@playwright/test"
 ```
 
 ### Login Page Object
@@ -510,54 +517,53 @@ export { expect } from "@playwright/test";
 
 ```typescript
 // page-objects/LoginPage.ts
-import { type Page, type Locator, expect } from "@playwright/test";
+import { type Page, type Locator, expect } from "@playwright/test"
 
 export class LoginPage {
-  readonly page: Page;
-  readonly usernameInput: Locator;
-  readonly passwordInput: Locator;
-  readonly loginButton: Locator;
-  readonly errorMessage: Locator;
-  readonly forgotPasswordLink: Locator;
+  readonly page: Page
+  readonly usernameInput: Locator
+  readonly passwordInput: Locator
+  readonly loginButton: Locator
+  readonly errorMessage: Locator
+  readonly forgotPasswordLink: Locator
 
   constructor(page: Page) {
-    this.page = page;
-    this.usernameInput = page.getByLabel("Username");
-    this.passwordInput = page.getByLabel("Password");
-    this.loginButton = page.getByRole("button", { name: "Log in" });
-    this.errorMessage = page.getByRole("alert");
+    this.page = page
+    this.usernameInput = page.getByLabel("Username")
+    this.passwordInput = page.getByLabel("Password")
+    this.loginButton = page.getByRole("button", { name: "Log in" })
+    this.errorMessage = page.getByRole("alert")
     this.forgotPasswordLink = page.getByRole("link", {
       name: "Forgot password",
-    });
+    })
   }
 
   async goto() {
-    await this.page.goto("/login");
-    await expect(this.loginButton).toBeVisible();
+    await this.page.goto("/login")
+    await expect(this.loginButton).toBeVisible()
   }
 
   async login(username: string, password: string) {
-    await this.usernameInput.fill(username);
-    await this.passwordInput.fill(password);
-    await this.loginButton.click();
+    await this.usernameInput.fill(username)
+    await this.passwordInput.fill(password)
+    await this.loginButton.click()
   }
 
   async loginAndWaitForHome(username: string, password: string) {
-    await this.login(username, password);
-    await this.page.waitForURL("/home");
+    await this.login(username, password)
+    await this.page.waitForURL("/home")
   }
 
   async expectError(message: string | RegExp) {
-    await expect(this.errorMessage).toContainText(message);
+    await expect(this.errorMessage).toContainText(message)
   }
 
   async expectFieldError(field: "username" | "password", message: string) {
-    const input =
-      field === "username" ? this.usernameInput : this.passwordInput;
-    await expect(input).toHaveAttribute("aria-invalid", "true");
-    const errorId = await input.getAttribute("aria-describedby");
+    const input = field === "username" ? this.usernameInput : this.passwordInput
+    await expect(input).toHaveAttribute("aria-invalid", "true")
+    const errorId = await input.getAttribute("aria-describedby")
     if (errorId) {
-      await expect(this.page.locator(`#${errorId}`)).toContainText(message);
+      await expect(this.page.locator(`#${errorId}`)).toContainText(message)
     }
   }
 }
@@ -565,161 +571,155 @@ export class LoginPage {
 
 ```typescript
 // tests/login.spec.ts
-import { test, expect } from "@playwright/test";
-import { LoginPage } from "../page-objects/LoginPage";
+import { test, expect } from "@playwright/test"
+import { LoginPage } from "../page-objects/LoginPage"
 
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [] } })
 
 test.describe("login page", () => {
-  let loginPage: LoginPage;
+  let loginPage: LoginPage
 
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page);
-    await loginPage.goto();
-  });
+    loginPage = new LoginPage(page)
+    await loginPage.goto()
+  })
 
   test("successful login redirects to home", async ({ page }) => {
-    await loginPage.loginAndWaitForHome(
-      "testuser@example.com",
-      "secretPass123"
-    );
-    await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-  });
+    await loginPage.loginAndWaitForHome("testuser@example.com", "secretPass123")
+    await expect(page.getByRole("heading", { name: "Home" })).toBeVisible()
+  })
 
   test("wrong password shows error", async () => {
-    await loginPage.login("testuser@example.com", "wrong-password");
-    await loginPage.expectError("Invalid username or password");
-  });
+    await loginPage.login("testuser@example.com", "wrong-password")
+    await loginPage.expectError("Invalid username or password")
+  })
 
   test("empty fields show validation errors", async () => {
-    await loginPage.loginButton.click();
-    await loginPage.expectFieldError("username", "Username is required");
-  });
+    await loginPage.loginButton.click()
+    await loginPage.expectFieldError("username", "Username is required")
+  })
 
   test("forgot password link navigates correctly", async ({ page }) => {
-    await loginPage.forgotPasswordLink.click();
-    await page.waitForURL("/forgot-password");
-    await expect(
-      page.getByRole("heading", { name: "Reset password" })
-    ).toBeVisible();
-  });
-});
+    await loginPage.forgotPasswordLink.click()
+    await page.waitForURL("/forgot-password")
+    await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible()
+  })
+})
 ```
 
 ### API-Based Login
 
-**Use when**: You want the fastest possible authentication without any browser interaction.
-**Avoid when**: You are specifically testing the login UI.
+**Use when**: You want the fastest possible authentication without any browser interaction. **Avoid
+when**: You are specifically testing the login UI.
 
 API login is typically 5-10x faster than UI login.
 
 ```typescript
 // global-setup.ts — API-based login (fastest)
-import { request, type FullConfig } from "@playwright/test";
+import { request, type FullConfig } from "@playwright/test"
 
 async function globalSetup(config: FullConfig) {
-  const { baseURL } = config.projects[0].use;
+  const { baseURL } = config.projects[0].use
 
-  const requestContext = await request.newContext({ baseURL });
+  const requestContext = await request.newContext({ baseURL })
 
   const response = await requestContext.post("/api/auth/login", {
     data: {
       email: process.env.TEST_USER_EMAIL!,
       password: process.env.TEST_USER_PASSWORD!,
     },
-  });
+  })
 
   if (!response.ok()) {
-    throw new Error(
-      `API login failed: ${response.status()} ${await response.text()}`
-    );
+    throw new Error(`API login failed: ${response.status()} ${await response.text()}`)
   }
 
-  await requestContext.storageState({ path: ".auth/session.json" });
-  await requestContext.dispose();
+  await requestContext.storageState({ path: ".auth/session.json" })
+  await requestContext.dispose()
 }
 
-export default globalSetup;
+export default globalSetup
 ```
 
 ```typescript
 // fixtures/api-auth.ts — fixture version for per-test authentication
-import { test as base } from "@playwright/test";
+import { test as base } from "@playwright/test"
 
 export const test = base.extend({
   authenticatedPage: async ({ browser, playwright }, use) => {
     const apiContext = await playwright.request.newContext({
       baseURL: "http://localhost:4000",
-    });
+    })
 
     await apiContext.post("/api/auth/login", {
       data: {
         email: "testuser@example.com",
         password: "secretPass123",
       },
-    });
+    })
 
-    const state = await apiContext.storageState();
-    const context = await browser.newContext({ storageState: state });
-    const page = await context.newPage();
+    const state = await apiContext.storageState()
+    const context = await browser.newContext({ storageState: state })
+    const page = await context.newPage()
 
-    await use(page);
+    await use(page)
 
-    await context.close();
-    await apiContext.dispose();
+    await context.close()
+    await apiContext.dispose()
   },
-});
+})
 
-export { expect } from "@playwright/test";
+export { expect } from "@playwright/test"
 ```
 
 ### Unauthenticated Tests
 
-**Use when**: Testing the login page, signup flow, password reset, public pages, or redirect behavior for unauthenticated users.
-**Avoid when**: The test requires a logged-in user.
+**Use when**: Testing the login page, signup flow, password reset, public pages, or redirect
+behavior for unauthenticated users. **Avoid when**: The test requires a logged-in user.
 
-When your config sets a default `storageState`, you must explicitly clear it for unauthenticated tests.
+When your config sets a default `storageState`, you must explicitly clear it for unauthenticated
+tests.
 
 ```typescript
 // tests/public-pages.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [] } })
 
 test.describe("unauthenticated access", () => {
   test("homepage is accessible without login", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
-  });
+    await page.goto("/")
+    await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Log in" })).toBeVisible()
+  })
 
   test("protected route redirects to login", async ({ page }) => {
-    await page.goto("/home");
-    await page.waitForURL("**/login**");
-    expect(page.url()).toContain("redirect=%2Fhome");
-  });
+    await page.goto("/home")
+    await page.waitForURL("**/login**")
+    expect(page.url()).toContain("redirect=%2Fhome")
+  })
 
   test("expired session shows re-login prompt", async ({ page, context }) => {
-    await page.goto("/home");
-    await context.clearCookies();
+    await page.goto("/home")
+    await context.clearCookies()
 
-    await page.goto("/settings");
-    await page.waitForURL("**/login**");
-    await expect(page.getByText("Your session has expired")).toBeVisible();
-  });
+    await page.goto("/settings")
+    await page.waitForURL("**/login**")
+    await expect(page.getByText("Your session has expired")).toBeVisible()
+  })
 
   test("signup flow creates account", async ({ page }) => {
-    await page.goto("/signup");
-    await page.getByLabel("Name").fill("New User");
-    await page.getByLabel("Email").fill(`test-${Date.now()}@example.com`);
-    await page.getByLabel("Password", { exact: true }).fill("secretPass123");
-    await page.getByLabel("Confirm password").fill("secretPass123");
-    await page.getByRole("button", { name: "Create account" }).click();
+    await page.goto("/signup")
+    await page.getByLabel("Name").fill("New User")
+    await page.getByLabel("Email").fill(`test-${Date.now()}@example.com`)
+    await page.getByLabel("Password", { exact: true }).fill("secretPass123")
+    await page.getByLabel("Confirm password").fill("secretPass123")
+    await page.getByRole("button", { name: "Create account" }).click()
 
-    await page.waitForURL("/onboarding");
-    await expect(page.getByText("Welcome, New User")).toBeVisible();
-  });
-});
+    await page.waitForURL("/onboarding")
+    await expect(page.getByText("Welcome, New User")).toBeVisible()
+  })
+})
 ```
 
 ## Decision Guide
@@ -768,7 +768,8 @@ Need to test the login page itself?
 
 ### Global setup fails with "Target page, context or browser has been closed"
 
-**Cause**: The login page redirected unexpectedly, or the browser closed before `storageState()` was called.
+**Cause**: The login page redirected unexpectedly, or the browser closed before `storageState()` was
+called.
 
 **Fix**:
 
@@ -777,11 +778,9 @@ Need to test the login page itself?
 - Add error handling to global setup:
 
 ```typescript
-const response = await page.waitForResponse("**/api/auth/**");
+const response = await page.waitForResponse("**/api/auth/**")
 if (!response.ok()) {
-  throw new Error(
-    `Login failed in global setup: ${response.status()} ${await response.text()}`
-  );
+  throw new Error(`Login failed in global setup: ${response.status()} ${await response.text()}`)
 }
 ```
 
@@ -805,16 +804,17 @@ if (!response.ok()) {
 - Verify cookies exist before saving:
 
 ```typescript
-const cookies = await context.cookies();
+const cookies = await context.cookies()
 if (cookies.length === 0) {
-  throw new Error("No cookies found after login");
+  throw new Error("No cookies found after login")
 }
-await context.storageState({ path: ".auth/session.json" });
+await context.storageState({ path: ".auth/session.json" })
 ```
 
 ### Different browsers get different cookies
 
-**Cause**: Some auth flows set cookies with `SameSite=Strict` or use browser-specific cookie behavior.
+**Cause**: Some auth flows set cookies with `SameSite=Strict` or use browser-specific cookie
+behavior.
 
 **Fix**:
 
@@ -856,15 +856,16 @@ projects: [
 ```typescript
 page.on("request", (req) => {
   if (req.url().includes("oauth") || req.url().includes("accounts.provider")) {
-    console.log("OAuth request:", req.url());
+    console.log("OAuth request:", req.url())
   }
-});
+})
 ```
 
 ## Related
 
 - [fixtures-hooks.md](../core/fixtures-hooks.md) — custom fixtures for auth setup and teardown
-- [configuration.md](../core/configuration.md) — `storageState`, projects, and global setup configuration
+- [configuration.md](../core/configuration.md) — `storageState`, projects, and global setup
+  configuration
 - [global-setup.md](../core/global-setup.md) — global setup patterns and project dependencies
 - [network-advanced.md](network-advanced.md) — route interception patterns used in OAuth mocking
 - [api-testing.md](../testing-patterns/api-testing.md) — API request context used in API-based login

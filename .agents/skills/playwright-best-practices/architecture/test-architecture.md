@@ -10,7 +10,8 @@
 6. [Common Mistakes](#common-mistakes)
 7. [Related](#related)
 
-> **When to use**: Deciding which test type to write for a feature. Ask: "What's the cheapest test that gives confidence this works?"
+> **When to use**: Deciding which test type to write for a feature. Ask: "What's the cheapest test
+> that gives confidence this works?"
 
 ## Decision Matrix
 
@@ -53,79 +54,77 @@
 - Third-party iframe interactions
 
 ```typescript
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test.describe("Products API", () => {
-  let token: string;
+  let token: string
 
   test.beforeAll(async ({ request }) => {
     const res = await request.post("/api/auth/token", {
       data: { email: "manager@shop.io", password: "mgr-secret" },
-    });
-    token = (await res.json()).accessToken;
-  });
+    })
+    token = (await res.json()).accessToken
+  })
 
   test("creates product with valid payload", async ({ request }) => {
     const res = await request.post("/api/products", {
       headers: { Authorization: `Bearer ${token}` },
       data: { name: "Widget Pro", sku: "WGT-100", price: 29.99 },
-    });
+    })
 
-    expect(res.status()).toBe(201);
-    const product = await res.json();
-    expect(product).toMatchObject({ name: "Widget Pro", sku: "WGT-100" });
-    expect(product).toHaveProperty("id");
-  });
+    expect(res.status()).toBe(201)
+    const product = await res.json()
+    expect(product).toMatchObject({ name: "Widget Pro", sku: "WGT-100" })
+    expect(product).toHaveProperty("id")
+  })
 
   test("rejects duplicate SKU with 409", async ({ request }) => {
     const res = await request.post("/api/products", {
       headers: { Authorization: `Bearer ${token}` },
       data: { name: "Duplicate", sku: "WGT-100", price: 19.99 },
-    });
+    })
 
-    expect(res.status()).toBe(409);
-    expect((await res.json()).message).toContain("already exists");
-  });
+    expect(res.status()).toBe(409)
+    expect((await res.json()).message).toContain("already exists")
+  })
 
   test("returns 422 for missing required fields", async ({ request }) => {
     const res = await request.post("/api/products", {
       headers: { Authorization: `Bearer ${token}` },
       data: { name: "Incomplete" },
-    });
+    })
 
-    expect(res.status()).toBe(422);
-    const err = await res.json();
-    expect(err.errors).toContainEqual(
-      expect.objectContaining({ field: "sku" })
-    );
-  });
+    expect(res.status()).toBe(422)
+    const err = await res.json()
+    expect(err.errors).toContainEqual(expect.objectContaining({ field: "sku" }))
+  })
 
   test("staff role cannot delete products", async ({ request }) => {
     const staffLogin = await request.post("/api/auth/token", {
       data: { email: "staff@shop.io", password: "staff-pass" },
-    });
-    const staffToken = (await staffLogin.json()).accessToken;
+    })
+    const staffToken = (await staffLogin.json()).accessToken
 
     const res = await request.delete("/api/products/123", {
       headers: { Authorization: `Bearer ${staffToken}` },
-    });
+    })
 
-    expect(res.status()).toBe(403);
-  });
+    expect(res.status()).toBe(403)
+  })
 
   test("lists products with pagination", async ({ request }) => {
     const res = await request.get("/api/products", {
       headers: { Authorization: `Bearer ${token}` },
       params: { page: "1", limit: "20" },
-    });
+    })
 
-    expect(res.status()).toBe(200);
-    const body = await res.json();
-    expect(body.items).toBeInstanceOf(Array);
-    expect(body.items.length).toBeLessThanOrEqual(20);
-    expect(body).toHaveProperty("totalCount");
-  });
-});
+    expect(res.status()).toBe(200)
+    const body = await res.json()
+    expect(body.items).toBeInstanceOf(Array)
+    expect(body.items.length).toBeLessThanOrEqual(20)
+    expect(body).toHaveProperty("totalCount")
+  })
+})
 ```
 
 ## Component Tests
@@ -236,50 +235,46 @@ test.describe("ContactForm component", () => {
 - Edge cases that only affect the backend
 
 ```typescript
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test.describe("subscription flow", () => {
   test.beforeEach(async ({ page }) => {
     await page.request.post("/api/test/seed-account", {
       data: { plan: "free", email: "subscriber@demo.io" },
-    });
-    await page.goto("/account/upgrade");
-  });
+    })
+    await page.goto("/account/upgrade")
+  })
 
   test("upgrades to premium plan", async ({ page }) => {
     await test.step("select plan", async () => {
-      await expect(
-        page.getByRole("heading", { name: "Choose Your Plan" })
-      ).toBeVisible();
-      await page.getByRole("button", { name: "Select Premium" }).click();
-    });
+      await expect(page.getByRole("heading", { name: "Choose Your Plan" })).toBeVisible()
+      await page.getByRole("button", { name: "Select Premium" }).click()
+    })
 
     await test.step("enter billing details", async () => {
-      await page.getByLabel("Cardholder name").fill("Sam Johnson");
-      await page.getByLabel("Billing address").fill("456 Oak Ave");
-      await page.getByLabel("City").fill("Seattle");
-      await page.getByRole("combobox", { name: "State" }).selectOption("WA");
-      await page.getByLabel("Postal code").fill("98101");
-      await page.getByRole("button", { name: "Continue" }).click();
-    });
+      await page.getByLabel("Cardholder name").fill("Sam Johnson")
+      await page.getByLabel("Billing address").fill("456 Oak Ave")
+      await page.getByLabel("City").fill("Seattle")
+      await page.getByRole("combobox", { name: "State" }).selectOption("WA")
+      await page.getByLabel("Postal code").fill("98101")
+      await page.getByRole("button", { name: "Continue" }).click()
+    })
 
     await test.step("complete payment", async () => {
-      const paymentFrame = page.frameLocator('iframe[title="Secure Payment"]');
-      await paymentFrame.getByLabel("Card number").fill("5555555555554444");
-      await paymentFrame.getByLabel("Expiry").fill("09/29");
-      await paymentFrame.getByLabel("CVV").fill("456");
-      await page.getByRole("button", { name: "Subscribe now" }).click();
-    });
+      const paymentFrame = page.frameLocator('iframe[title="Secure Payment"]')
+      await paymentFrame.getByLabel("Card number").fill("5555555555554444")
+      await paymentFrame.getByLabel("Expiry").fill("09/29")
+      await paymentFrame.getByLabel("CVV").fill("456")
+      await page.getByRole("button", { name: "Subscribe now" }).click()
+    })
 
     await test.step("verify success", async () => {
-      await page.waitForURL("**/account/subscription/success**");
-      await expect(
-        page.getByRole("heading", { name: "Welcome to Premium" })
-      ).toBeVisible();
-      await expect(page.getByText(/Subscription #\d+/)).toBeVisible();
-    });
-  });
-});
+      await page.waitForURL("**/account/subscription/success**")
+      await expect(page.getByRole("heading", { name: "Welcome to Premium" })).toBeVisible()
+      await expect(page.getByText(/Subscription #\d+/)).toBeVisible()
+    })
+  })
+})
 ```
 
 ## Layering Test Types
@@ -344,7 +339,9 @@ For this feature:
 - **10 component tests** — ~5 seconds total, real browser but no server
 - **3 E2E tests** — ~15 seconds total, full stack
 
-Total: 24 tests, ~22 seconds. API tests catch most regressions. Component tests catch UI bugs. E2E tests prove wiring works. If E2E fails but API and component pass, the problem is in integration (routing, state management, API client).
+Total: 24 tests, ~22 seconds. API tests catch most regressions. Component tests catch UI bugs. E2E
+tests prove wiring works. If E2E fails but API and component pass, the problem is in integration
+(routing, state management, API client).
 
 ## Common Mistakes
 

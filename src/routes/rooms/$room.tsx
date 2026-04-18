@@ -1,7 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import { RoomScreen } from "#/components/planning-poker/RoomScreen";
-import { getRoomSnapshotFn } from "#/lib/room.functions";
+import { RoomScreen } from "#/components/planning-poker/RoomScreen"
+import { getRoomSnapshotFn } from "#/lib/room.functions"
 
 export const Route = createFileRoute("/rooms/$room")({
   loader: async ({ params }) => {
@@ -9,13 +9,13 @@ export const Route = createFileRoute("/rooms/$room")({
       data: {
         roomId: params.room,
       },
-    });
+    })
 
     if (!room) {
-      throw redirect({ to: "/", search: { room: params.room } });
+      throw redirect({ to: "/", search: { room: params.room } })
     }
 
-    return room;
+    return room
   },
   head: ({ params }) => ({
     meta: [
@@ -25,11 +25,11 @@ export const Route = createFileRoute("/rooms/$room")({
     ],
   }),
   component: RoomRoute,
-});
+})
 
 function RoomRoute() {
-  const initialRoom = Route.useLoaderData();
-  const { room } = Route.useParams();
+  const initialRoom = Route.useLoaderData()
+  const { room } = Route.useParams()
 
-  return <RoomScreen initialRoom={initialRoom} roomId={room} />;
+  return <RoomScreen initialRoom={initialRoom} roomId={room} />
 }

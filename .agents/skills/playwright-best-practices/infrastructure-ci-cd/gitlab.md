@@ -8,7 +8,8 @@
 4. [Anti-Patterns](#anti-patterns)
 5. [Troubleshooting](#troubleshooting)
 
-> **When to use**: Running Playwright tests in GitLab pipelines on merge requests, merges to main, or scheduled pipelines.
+> **When to use**: Running Playwright tests in GitLab pipelines on merge requests, merges to main,
+> or scheduled pipelines.
 
 ## Key Commands
 
@@ -73,8 +74,8 @@ e2e:
 
 ### Sharded Parallel Execution
 
-**Use when**: Test suite exceeds 10 minutes. GitLab's `parallel` keyword splits across jobs automatically.
-**Avoid when**: Suite runs under 5 minutes.
+**Use when**: Test suite exceeds 10 minutes. GitLab's `parallel` keyword splits across jobs
+automatically. **Avoid when**: Suite runs under 5 minutes.
 
 ```yaml
 image: mcr.microsoft.com/playwright:v1.48.0-noble
@@ -138,15 +139,14 @@ combine-reports:
 ```typescript
 // playwright.config.ts
 export default defineConfig({
-  reporter: process.env.CI
-    ? [["blob"], ["dot"]]
-    : [["html", { open: "on-failure" }]],
-});
+  reporter: process.env.CI ? [["blob"], ["dot"]] : [["html", { open: "on-failure" }]],
+})
 ```
 
 ### Environment Variables and Secrets
 
-**Use when**: Tests need secrets (API keys, passwords) and should only run on merge requests or the default branch.
+**Use when**: Tests need secrets (API keys, passwords) and should only run on merge requests or the
+default branch.
 
 ```yaml
 image: mcr.microsoft.com/playwright:v1.48.0-noble
@@ -180,8 +180,7 @@ e2e:staging:
       allow_failure: true
 ```
 
-**Setting variables in GitLab:**
-Navigate to **Settings > CI/CD > Variables** and add:
+**Setting variables in GitLab:** Navigate to **Settings > CI/CD > Variables** and add:
 
 - `STAGING_URL` -- not masked, not protected
 - `TEST_PASSWORD` -- masked, protected
@@ -244,7 +243,8 @@ e2e:all-browsers:
 
 ### Services Integration (Database, Cache)
 
-**Use when**: Tests need the application running alongside Playwright, or you need external services.
+**Use when**: Tests need the application running alongside Playwright, or you need external
+services.
 
 ```yaml
 stages:
@@ -320,7 +320,7 @@ Set up the schedule in **CI/CD > Schedules**: `0 3 * * 1-5` (3 AM UTC, weekdays)
 
 | Anti-Pattern                                         | Problem                                                            | Do This Instead                                                           |
 | ---------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Not using the Playwright Docker image                | Installing browsers every run adds 1-2 minutes                     | Use `mcr.microsoft.com/playwright:v1.48.0-noble` as base image                   |
+| Not using the Playwright Docker image                | Installing browsers every run adds 1-2 minutes                     | Use `mcr.microsoft.com/playwright:v1.48.0-noble` as base image            |
 | `artifacts: when: on_failure` only                   | No report when tests pass; can't verify results                    | Use `when: always` to capture reports regardless                          |
 | No `expire_in` on artifacts                          | Artifacts accumulate and consume storage                           | Set `expire_in: 14 days` for reports, `1 hour` for intermediate artifacts |
 | Hardcoding `CI_NODE_TOTAL` in shard flag             | Breaks when you change `parallel:` value                           | Use `--shard=$CI_NODE_INDEX/$CI_NODE_TOTAL`                               |
@@ -331,7 +331,8 @@ Set up the schedule in **CI/CD > Schedules**: `0 3 * * 1-5` (3 AM UTC, weekdays)
 
 ### Browser launch fails: "Failed to launch browser"
 
-**Cause**: Not using the Playwright Docker image, or using a version that doesn't match your `@playwright/test` version.
+**Cause**: Not using the Playwright Docker image, or using a version that doesn't match your
+`@playwright/test` version.
 
 **Fix**: Match the Docker image tag to your Playwright version:
 
@@ -352,7 +353,7 @@ export default defineConfig({
   use: {
     navigationTimeout: process.env.CI ? 30_000 : 15_000,
   },
-});
+})
 ```
 
 ### Pipeline runs on every push, not just merge requests
@@ -390,8 +391,6 @@ variables:
 
 ```typescript
 export default defineConfig({
-  reporter: process.env.CI
-    ? [["blob"], ["dot"]]
-    : [["html", { open: "on-failure" }]],
-});
+  reporter: process.env.CI ? [["blob"], ["dot"]] : [["html", { open: "on-failure" }]],
+})
 ```

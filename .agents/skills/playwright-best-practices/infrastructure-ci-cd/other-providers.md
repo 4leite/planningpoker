@@ -432,17 +432,13 @@ All platforms benefit from JUnit output for native test result display:
 
 ```typescript
 // playwright.config.ts
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test"
 
 export default defineConfig({
   reporter: process.env.CI
-    ? [
-        ["dot"],
-        ["html", { open: "never" }],
-        ["junit", { outputFile: "results/junit.xml" }],
-      ]
+    ? [["dot"], ["html", { open: "never" }], ["junit", { outputFile: "results/junit.xml" }]]
     : [["html", { open: "on-failure" }]],
-});
+})
 ```
 
 ## Platform Comparison

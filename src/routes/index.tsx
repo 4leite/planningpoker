@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
+import { createFileRoute } from "@tanstack/react-router"
+import { z } from "zod"
 
-import { HomeScreen } from "#/components/planning-poker/HomeScreen";
+import { HomeScreen } from "#/components/planning-poker/HomeScreen"
 
 export const Route = createFileRoute("/")({
   validateSearch: z.object({
@@ -15,8 +15,8 @@ export const Route = createFileRoute("/")({
     ],
   }),
   component: App,
-});
+})
 
 function App() {
-  return <HomeScreen />;
+  return <HomeScreen />
 }

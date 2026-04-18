@@ -22,7 +22,7 @@ npm init playwright@latest
 
 ```typescript
 // playwright.config.ts
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test"
 
 export default defineConfig({
   testDir: "./tests",
@@ -49,7 +49,7 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
   },
-});
+})
 ```
 
 ## E2E Tests
@@ -60,45 +60,45 @@ Full user journey tests through the browser.
 
 ```typescript
 // tests/e2e/checkout.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test.describe("Checkout Flow", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/products");
-  });
+    await page.goto("/products")
+  })
 
   test("complete purchase as guest", async ({ page }) => {
     // Add to cart
-    await page.getByRole("button", { name: "Add to Cart" }).first().click();
-    await expect(page.getByTestId("cart-count")).toHaveText("1");
+    await page.getByRole("button", { name: "Add to Cart" }).first().click()
+    await expect(page.getByTestId("cart-count")).toHaveText("1")
 
     // Go to checkout
-    await page.getByRole("link", { name: "Cart" }).click();
-    await page.getByRole("button", { name: "Checkout" }).click();
+    await page.getByRole("link", { name: "Cart" }).click()
+    await page.getByRole("button", { name: "Checkout" }).click()
 
     // Fill shipping
-    await page.getByLabel("Email").fill("guest@example.com");
-    await page.getByLabel("Address").fill("123 Test St");
-    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByLabel("Email").fill("guest@example.com")
+    await page.getByLabel("Address").fill("123 Test St")
+    await page.getByRole("button", { name: "Continue" }).click()
 
     // Payment
-    await page.getByLabel("Card Number").fill("4242424242424242");
-    await page.getByRole("button", { name: "Pay Now" }).click();
+    await page.getByLabel("Card Number").fill("4242424242424242")
+    await page.getByRole("button", { name: "Pay Now" }).click()
 
     // Confirmation
-    await expect(page.getByRole("heading")).toHaveText("Order Confirmed");
-  });
+    await expect(page.getByRole("heading")).toHaveText("Order Confirmed")
+  })
 
   test("apply discount code", async ({ page }) => {
-    await page.getByRole("button", { name: "Add to Cart" }).first().click();
-    await page.getByRole("link", { name: "Cart" }).click();
+    await page.getByRole("button", { name: "Add to Cart" }).first().click()
+    await page.getByRole("link", { name: "Cart" }).click()
 
-    await page.getByLabel("Discount Code").fill("SAVE10");
-    await page.getByRole("button", { name: "Apply" }).click();
+    await page.getByLabel("Discount Code").fill("SAVE10")
+    await page.getByRole("button", { name: "Apply" }).click()
 
-    await expect(page.getByText("10% discount applied")).toBeVisible();
-  });
-});
+    await expect(page.getByText("10% discount applied")).toBeVisible()
+  })
+})
 ```
 
 ### Best Practices
@@ -116,7 +116,9 @@ Test individual components in isolation using Playwright Component Testing.
 npm init playwright@latest -- --ct
 ```
 
-For comprehensive component testing patterns including mounting, props, events, slots, mocking, and framework-specific examples (React, Vue, Svelte), see **[component-testing.md](../testing-patterns/component-testing.md)**.
+For comprehensive component testing patterns including mounting, props, events, slots, mocking, and
+framework-specific examples (React, Vue, Svelte), see
+**[component-testing.md](../testing-patterns/component-testing.md)**.
 
 ## API Tests
 
@@ -133,12 +135,12 @@ test("displays mocked users", async ({ page }) => {
     route.fulfill({
       status: 200,
       json: [{ id: 1, name: "Test User" }],
-    })
-  );
+    }),
+  )
 
-  await page.goto("/users");
-  await expect(page.getByText("Test User")).toBeVisible();
-});
+  await page.goto("/users")
+  await expect(page.getByText("Test User")).toBeVisible()
+})
 
 // Mock with different responses
 test("handles API errors", async ({ page }) => {
@@ -146,23 +148,23 @@ test("handles API errors", async ({ page }) => {
     route.fulfill({
       status: 500,
       json: { error: "Server error" },
-    })
-  );
+    }),
+  )
 
-  await page.goto("/users");
-  await expect(page.getByText("Server error")).toBeVisible();
-});
+  await page.goto("/users")
+  await expect(page.getByText("Server error")).toBeVisible()
+})
 
 // Conditional mocking
 test("mocks based on request", async ({ page }) => {
   await page.route("**/api/users", (route, request) => {
     if (request.method() === "GET") {
-      route.fulfill({ json: [{ id: 1, name: "User" }] });
+      route.fulfill({ json: [{ id: 1, name: "User" }] })
     } else {
-      route.continue();
+      route.continue()
     }
-  });
-});
+  })
+})
 
 // Mock with delay (simulate slow network)
 test("handles slow API", async ({ page }) => {
@@ -170,16 +172,17 @@ test("handles slow API", async ({ page }) => {
     route.fulfill({
       json: { data: "test" },
       delay: 2000, // 2 second delay
-    })
-  );
+    }),
+  )
 
-  await page.goto("/dashboard");
-  await expect(page.getByText("Loading...")).toBeVisible();
-  await expect(page.getByText("test")).toBeVisible();
-});
+  await page.goto("/dashboard")
+  await expect(page.getByText("Loading...")).toBeVisible()
+  await expect(page.getByText("test")).toBeVisible()
+})
 ```
 
-For advanced patterns (GraphQL mocking, HAR recording, request modification, network throttling), see **[network-advanced.md](../advanced/network-advanced.md)**.
+For advanced patterns (GraphQL mocking, HAR recording, request modification, network throttling),
+see **[network-advanced.md](../advanced/network-advanced.md)**.
 
 ## Visual Regression Tests
 
@@ -189,26 +192,26 @@ Compare screenshots to detect visual changes.
 
 ```typescript
 // tests/visual/homepage.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
 test("homepage visual", async ({ page }) => {
-  await page.goto("/");
-  await expect(page).toHaveScreenshot("homepage.png");
-});
+  await page.goto("/")
+  await expect(page).toHaveScreenshot("homepage.png")
+})
 
 test("component visual", async ({ page }) => {
-  await page.goto("/components");
+  await page.goto("/components")
 
-  const button = page.getByRole("button", { name: "Primary" });
-  await expect(button).toHaveScreenshot("primary-button.png");
-});
+  const button = page.getByRole("button", { name: "Primary" })
+  await expect(button).toHaveScreenshot("primary-button.png")
+})
 ```
 
 ### Visual Test Options
 
 ```typescript
 test("dashboard visual", async ({ page }) => {
-  await page.goto("/dashboard");
+  await page.goto("/dashboard")
 
   await expect(page).toHaveScreenshot("dashboard.png", {
     fullPage: true, // Capture entire scrollable page
@@ -217,39 +220,35 @@ test("dashboard visual", async ({ page }) => {
     threshold: 0.2, // Pixel comparison threshold
     animations: "disabled", // Disable animations
     mask: [page.getByTestId("date")], // Mask dynamic content
-  });
-});
+  })
+})
 ```
 
 ### Handling Dynamic Content
 
 ```typescript
 test("page with dynamic content", async ({ page }) => {
-  await page.goto("/profile");
+  await page.goto("/profile")
 
   // Mask elements that change
   await expect(page).toHaveScreenshot("profile.png", {
-    mask: [
-      page.getByTestId("timestamp"),
-      page.getByTestId("avatar"),
-      page.getByRole("img"),
-    ],
-  });
-});
+    mask: [page.getByTestId("timestamp"), page.getByTestId("avatar"), page.getByRole("img")],
+  })
+})
 
 // Or hide elements via CSS
 test("page hiding dynamic elements", async ({ page }) => {
-  await page.goto("/profile");
+  await page.goto("/profile")
 
   await page.addStyleTag({
     content: `
       .dynamic-content { visibility: hidden !important; }
       [data-testid="ad-banner"] { display: none !important; }
     `,
-  });
+  })
 
-  await expect(page).toHaveScreenshot("profile-stable.png");
-});
+  await expect(page).toHaveScreenshot("profile-stable.png")
+})
 ```
 
 ### Visual Test Configuration
@@ -273,7 +272,7 @@ export default defineConfig({
       testMatch: /.*visual.*\.spec\.ts/,
     },
   ],
-});
+})
 ```
 
 ### Update Snapshots
@@ -320,9 +319,11 @@ tests/
 
 ## Related References
 
-- **Component Testing**: See [component-testing.md](../testing-patterns/component-testing.md) for comprehensive CT patterns
+- **Component Testing**: See [component-testing.md](../testing-patterns/component-testing.md) for
+  comprehensive CT patterns
 - **Projects**: See [projects-dependencies.md](projects-dependencies.md) for project-based filtering
-- **Page Objects**: See [page-object-model.md](page-object-model.md) for organizing page interactions
+- **Page Objects**: See [page-object-model.md](page-object-model.md) for organizing page
+  interactions
 - **Test Data**: See [fixtures-hooks.md](fixtures-hooks.md) for managing test data
 
 ## Tagging & Filtering
@@ -332,17 +333,17 @@ tests/
 ```typescript
 test("user login @smoke @auth", async ({ page }) => {
   // ...
-});
+})
 
 test("checkout flow @e2e @critical", async ({ page }) => {
   // ...
-});
+})
 
 test.describe("API tests @api", () => {
   test("create user", async ({ request }) => {
     // ...
-  });
-});
+  })
+})
 ```
 
 ### Running Tagged Tests
@@ -358,4 +359,5 @@ npx playwright test --grep-invert @slow
 npx playwright test --grep "@smoke|@critical"
 ```
 
-For project-based filtering and advanced project configuration, see **[projects-dependencies.md](projects-dependencies.md)**.
+For project-based filtering and advanced project configuration, see
+**[projects-dependencies.md](projects-dependencies.md)**.
