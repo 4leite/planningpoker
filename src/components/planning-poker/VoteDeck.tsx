@@ -1,7 +1,7 @@
-import { Button } from "@tohuhono/ui/button"
-import { cn } from "@tohuhono/utils"
+import { Button } from "@tohuhono/ui/button";
+import { cn } from "@tohuhono/utils";
 
-import { cardValues, type CardValue } from "#/lib/planning-poker"
+import { cardValues, type CardValue } from "#/lib/planning-poker";
 
 export const VoteDeck = ({
   selectedVote,
@@ -9,14 +9,14 @@ export const VoteDeck = ({
   isPending,
   onVote,
 }: {
-  selectedVote: CardValue | null
-  disabled: boolean
-  isPending: boolean
-  onVote: (vote: CardValue) => void
+  selectedVote: CardValue | null;
+  disabled: boolean;
+  isPending: boolean;
+  onVote: (vote: CardValue) => void;
 }) => (
   <div className="grid w-full grid-cols-5 gap-2 sm:gap-3">
     {cardValues.map((cardValue) => {
-      const isSelected = selectedVote === cardValue
+      const isSelected = selectedVote === cardValue;
       return (
         <Button
           key={cardValue}
@@ -25,13 +25,13 @@ export const VoteDeck = ({
           onClick={() => onVote(cardValue)}
           variant="outline"
           className={cn(
-            "h-14 rounded-lg text-base font-semibold sm:h-16 sm:text-lg",
+            "h-11 rounded-lg text-sm font-semibold sm:h-16 sm:text-lg",
             isSelected && "border-primary bg-muted",
           )}
         >
           {cardValue}
         </Button>
-      )
+      );
     })}
   </div>
-)
+);
