@@ -18,7 +18,7 @@ export const Menu = () => {
   return (
     <aside className="bg-sidebar text-sidebar-foreground grid w-full grid-cols-[1fr_auto] items-center gap-2 p-2">
       <div ref={portalRef} />
-      <ModeToggle />
+      <ModeToggle className="px-2 sm:px-4" />
     </aside>
   )
 }

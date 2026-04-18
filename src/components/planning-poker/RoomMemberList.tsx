@@ -23,8 +23,8 @@ export const RoomMemberList = ({
   currentMemberId: string | null
 }) => {
   const members = sortMembers(room.members, currentMemberId)
-  const radiusX = 40
-  const radiusY = 24
+  const radiusX = 46
+  const radiusY = 40
 
   return (
     <div className="pointer-events-none absolute inset-0">
@@ -45,8 +45,8 @@ export const RoomMemberList = ({
               member.role === "spectator" && "opacity-70",
             )}
             style={{
-              left: `${left}%`,
-              top: `${top}%`,
+              left: `clamp(3.5rem, ${left}%, calc(100% - 3.5rem))`,
+              top: `clamp(2.75rem, ${top}%, calc(100% - 2.75rem))`,
             }}
           >
             <div className="truncate text-sm font-medium">{member.name}</div>
@@ -54,7 +54,7 @@ export const RoomMemberList = ({
               {room.revealed
                 ? (member.vote ?? "-")
                 : member.role === "spectator"
-                  ? "spectator"
+                  ? "spectating"
                   : hasVote
                     ? "voted"
                     : ""}

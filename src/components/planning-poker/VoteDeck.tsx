@@ -25,7 +25,7 @@ export const VoteDeck = ({
           onClick={() => onVote(cardValue)}
           variant="outline"
           className={cn(
-            "h-14 rounded-lg text-base font-semibold sm:h-16 sm:text-lg",
+            "h-11 rounded-lg text-sm font-semibold sm:h-16 sm:text-lg",
             isSelected && "border-primary bg-muted",
           )}
         >

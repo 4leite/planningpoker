@@ -1,15 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 import { RoomScreen } from "#/components/planning-poker/RoomScreen"
 import { getRoomSnapshotFn } from "#/lib/room.functions"
 
 export const Route = createFileRoute("/rooms/$room")({
-  loader: ({ params }) =>
-    getRoomSnapshotFn({
+  loader: async ({ params }) => {
+    const room = await getRoomSnapshotFn({
       data: {
         roomId: params.room,
       },
-    }),
+    })
+
+    if (!room) {
+      throw redirect({ to: "/", search: { room: params.room } })
+    }
+
+    return room
+  },
   head: ({ params }) => ({
     meta: [
       {
