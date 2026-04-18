@@ -1,0 +1,41 @@
+x-podman:
+  in_pod: false
+
+services:
+  redis:
+    container_name: planning-poker-redis
+    image: docker.io/library/redis:7-alpine
+    userns_mode: keep-id
+    entrypoint: ["redis-server"]
+    command: ["--save", "", "--appendonly", "no", "--protected-mode", "no"]
+    ports:
+      - "6379:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  app:
+    container_name: planning-poker-app
+    image: localhost/planningpoker-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 5s
+      timeout: 5s
+      retries: 24

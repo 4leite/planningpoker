@@ -13,8 +13,10 @@ import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
 import { useRoomRealtime } from "#/hooks/use-room-realtime"
 import {
   calculateNumericAverage,
+  calculateVoteMode,
   castVoteState,
   changeRoleState,
+  countCastVotes,
   formatAverageVote,
   getVoteProgress,
   joinRoomState,
@@ -93,6 +95,8 @@ export const RoomScreen = ({
   const currentMember = room?.members.find((member) => member.id === identity?.memberId) ?? null
   const voteProgress = room ? getVoteProgress(room) : null
   const average = room ? formatAverageVote(calculateNumericAverage(room.members)) : null
+  const mode = room ? calculateVoteMode(room.members) : null
+  const castVoteCount = room ? countCastVotes(room.members) : 0
 
   const applyRoomMutation = (nextRoom: RoomState) => {
     setFeedbackMessage(null)
@@ -331,9 +335,7 @@ export const RoomScreen = ({
 
   const canReset = room.revealed || room.members.some((member) => member.vote !== null)
   const revealLabel = room.revealed ? "reset" : "reveal"
-  const centerLabel = room.revealed
-    ? (average ?? "-")
-    : `${voteProgress?.readyCount ?? 0} / ${voteProgress?.participantCount ?? 0}`
+  const centerLabel = `${voteProgress?.readyCount ?? 0} / ${voteProgress?.participantCount ?? 0}`
 
   return (
     <>
@@ -357,7 +359,7 @@ export const RoomScreen = ({
 
               <div className="flex gap-2">
                 <label className="flex items-center gap-2 text-sm">
-                  <span className="hidden sm:inline">spectator</span>
+                  <span className="hidden sm:inline">spectate</span>
                   <Switch
                     checked={currentMember?.role === "spectator"}
                     disabled={!currentMember || isPending}
@@ -392,8 +394,31 @@ export const RoomScreen = ({
           <div className="bg-muted/20 relative mx-auto aspect-square w-full max-w-4xl rounded-[999px] border sm:aspect-video">
             <RoomMemberList room={room} currentMemberId={identity?.memberId ?? null} />
 
-            <div className="bg-background absolute top-1/2 left-1/2 flex w-40 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border px-5 py-4 text-center shadow-sm sm:w-48 sm:px-6 sm:py-5">
-              <div className="text-muted-foreground text-sm">{centerLabel}</div>
+            <div className="bg-background absolute top-1/2 left-1/2 flex w-44 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border px-5 py-4 text-center shadow-sm sm:w-56 sm:px-6 sm:py-5">
+              {room.revealed ? (
+                <div className="grid w-full grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase sm:text-[11px]">
+                      Avg
+                    </div>
+                    <div className="mt-1 text-sm font-semibold sm:text-base">{average ?? "-"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase sm:text-[11px]">
+                      Mde
+                    </div>
+                    <div className="mt-1 text-sm font-semibold sm:text-base">{mode ?? "-"}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-[10px] font-medium tracking-[0.18em] uppercase sm:text-[11px]">
+                      Votes
+                    </div>
+                    <div className="mt-1 text-sm font-semibold sm:text-base">{castVoteCount}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-sm">{centerLabel}</div>
+              )}
               <Button
                 type="button"
                 onClick={room.revealed ? handleReset : handleReveal}

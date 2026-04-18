@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest"
 
 import {
   calculateNumericAverage,
+  calculateVoteMode,
   castVoteState,
   changeRoleState,
+  countCastVotes,
   createRoomState,
   formatAverageVote,
   joinRoomState,
@@ -117,5 +119,46 @@ describe("planning poker domain rules", () => {
     })
 
     expect(formatAverageVote(calculateNumericAverage(withVotes.members))).toBe("4")
+  })
+
+  it("reports the most common revealed vote and cast vote count", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const three = joinRoomState({
+      room: two,
+      memberId: "33333333-3333-4333-8333-333333333333",
+      name: "Sam",
+      now: 1400,
+    })
+    const withVotes = castVoteState({
+      room: castVoteState({
+        room: castVoteState({
+          room: three,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "5",
+          now: 1500,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1600,
+      }),
+      memberId: "33333333-3333-4333-8333-333333333333",
+      vote: "8",
+      now: 1700,
+    })
+
+    expect(calculateVoteMode(withVotes.members)).toBe("5")
+    expect(countCastVotes(withVotes.members)).toBe(3)
   })
 })

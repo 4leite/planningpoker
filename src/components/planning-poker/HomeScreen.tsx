@@ -22,11 +22,6 @@ export const HomeScreen = () => {
       })
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === "room_create_rate_limited") {
-        setErrorMessage("Too many rooms created from this client. Wait a minute and try again.")
-        return
-      }
-
       setErrorMessage(
         error instanceof Error ? error.message : "We could not open a room right now.",
       )
