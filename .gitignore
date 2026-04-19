@@ -15,3 +15,4 @@ todos.json
 .tmp
 .vercel
 test/results
+.env*.local

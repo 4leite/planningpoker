@@ -1,8 +1,10 @@
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
-import { Button } from "@tohuhono/ui/button"
+import { Button, buttonVariants } from "@tohuhono/ui/button"
 import { Input } from "@tohuhono/ui/input"
+import { cn } from "@tohuhono/utils"
+import { maxLength } from "human-id"
 import { useState } from "react"
 
 import { roomIdSchema } from "#/lib/planning-poker"
@@ -14,10 +16,13 @@ export const HomeScreen = () => {
   const [joinRoomId, setJoinRoomId] = useState("")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const createRoomMutation = useMutation({
-    mutationFn: () => createRoomServerFn(),
+    mutationFn: () =>
+      createRoomServerFn({
+        data: {},
+      }),
     onSuccess: ({ roomId }) => {
       void navigate({
-        to: "/rooms/$room",
+        to: "/r/$room",
         params: { room: roomId },
       })
     },
@@ -44,40 +49,53 @@ export const HomeScreen = () => {
 
     setErrorMessage(null)
     void navigate({
-      to: "/rooms/$room",
+      to: "/r/$room",
       params: { room: normalizedRoomId },
     })
   }
 
+  const hasJoinRoomId = joinRoomId.trim().length > 0
+
   return (
-    <main className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-2xl items-center justify-center px-4 py-10">
-      <form className="flex w-full max-w-xl flex-col items-center gap-4" onSubmit={handleJoinRoom}>
+    <form className="flex w-md flex-col gap-4" onSubmit={handleJoinRoom}>
+      <Button
+        type="button"
+        className="w-full"
+        disabled={createRoomMutation.isPending}
+        onClick={handleCreateRoom}
+      >
+        Create New Table
+      </Button>
+      <div className="group relative grid grid-cols-[0fr_auto] gap-3 transition-all duration-600 ease-in-out focus-within:grid-cols-[1fr_auto] hover:grid-cols-[1fr_auto]">
+        <span
+          className={cn(
+            buttonVariants({ variant: "secondary" }),
+            "text-secondary-foreground/50 visible absolute z-10 h-full w-full transition-all transition-discrete duration-300 ease-in-out",
+            "group-focus-within:hidden group-focus-within:opacity-0",
+            "group-hover:hidden group-hover:opacity-0",
+            "sr-only:hidden",
+          )}
+        >
+          Join Existing Room
+        </span>
         <Input
           value={joinRoomId}
           onChange={(event) => setJoinRoomId(event.target.value)}
+          maxLength={maxLength()}
           placeholder="room id"
-          className="h-12 text-center text-base"
+          className="w-full text-center"
         />
-        <div className="flex w-full justify-center gap-3">
-          <Button
-            type="submit"
-            variant="outline"
-            className="min-w-28"
-            disabled={createRoomMutation.isPending}
-          >
-            enter
-          </Button>
-          <Button
-            type="button"
-            className="min-w-28"
-            disabled={createRoomMutation.isPending}
-            onClick={handleCreateRoom}
-          >
-            create
-          </Button>
-        </div>
-        {errorMessage ? <p className="text-destructive text-sm">{errorMessage}</p> : null}
-      </form>
-    </main>
+
+        <Button
+          type={"submit"}
+          variant="secondary"
+          disabled={createRoomMutation.isPending || !hasJoinRoomId}
+          className={cn("h-full w-auto")}
+        >
+          Join
+        </Button>
+      </div>
+      {errorMessage ? <p className="text-destructive text-sm">{errorMessage}</p> : null}
+    </form>
   )
 }

@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-planningpoker",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"build"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "verify-landing-cache-header",
+			"type": "shell",
+			"command": "mkdir -p .tmp && PORT=3001 node .output/server/index.mjs > .tmp/landing-cache-server.log 2>&1 & server_pid=$! && curl -sI --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:3001/ && kill $server_pid",
+			"isBackground": false
+		}
+	]
+}

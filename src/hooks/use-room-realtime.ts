@@ -9,23 +9,20 @@ import { getRoomSnapshotFn } from "#/lib/room.functions"
 export const useRoomRealtime = ({
   initialRoom,
   roomId,
-  enabled,
 }: {
   initialRoom: RoomState | null
   roomId: string
-  enabled: boolean
 }) => {
   const queryClient = useQueryClient()
   const [connectionState, setConnectionState] = useState<
     "idle" | "connecting" | "live" | "reconnecting"
-  >(enabled ? "connecting" : "idle")
+  >(initialRoom ? "connecting" : "idle")
   const fetchSnapshot = useServerFn(getRoomSnapshotFn)
 
   const query = useQuery(
     roomQueryOptions({
       roomId,
-      enabled,
-      initialData: initialRoom,
+      initialData: initialRoom ?? undefined,
       queryFn: () =>
         fetchSnapshot({
           data: {
@@ -34,6 +31,8 @@ export const useRoomRealtime = ({
         }),
     }),
   )
+
+  const hasActiveRoom = query.data !== null && query.data !== undefined
 
   const setRoom = (nextRoom: RoomState | null) => {
     queryClient.setQueryData(roomQueryKey(roomId), (currentRoom: RoomState | null | undefined) => {
@@ -50,7 +49,7 @@ export const useRoomRealtime = ({
   }
 
   useEffect(() => {
-    if (!enabled) {
+    if (!hasActiveRoom) {
       setConnectionState("idle")
       return
     }
@@ -84,11 +83,12 @@ export const useRoomRealtime = ({
       eventSource.close()
       setConnectionState("idle")
     }
-  }, [enabled, roomId])
+  }, [hasActiveRoom, roomId])
 
   return {
     room: query.data ?? null,
     setRoom,
     connectionState,
+    isLoading: query.isPending,
   }
 }
