@@ -57,3 +57,4 @@ grep -E 'execution-model|server-functions|server-routes'
 - [coding style rules and guidelines](.agents/CODESTYLE.md)
 - [git and github metadata](.agents/METADATA.md)
 - [build and deploy](.agents/DEPLOYMENT.md)
+- [redis data model](.agents/REDIS_DATA_MODEL.md)

@@ -52,7 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AppQueryProvider>
           <MenuProvider>
             <Menu />
-            <main className="flex h-full w-full flex-1 flex-col items-center justify-center gap-2">
+            <main className="flex h-full w-full flex-1 flex-col items-center justify-start gap-2 py-6">
               {children}
             </main>
             <TanStackDevtools

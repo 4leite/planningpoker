@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  calculateAverageResultCard,
   calculateNumericAverage,
   calculateVoteMode,
   castVoteState,
@@ -8,9 +9,12 @@ import {
   countCastVotes,
   createRoomState,
   formatAverageVote,
+  getVoteExtremesOutsideMode,
   joinRoomState,
+  rerollRoomState,
   resetRoomState,
   revealRoomState,
+  setRoomResultState,
 } from "#/lib/planning-poker"
 
 describe("planning poker domain rules", () => {
@@ -77,8 +81,211 @@ describe("planning poker domain rules", () => {
     })
 
     expect(revealedRoom.revealed).toBe(true)
+    expect(revealedRoom.history).toEqual([])
     expect(resetRoom.revealed).toBe(false)
     expect(resetRoom.members.every((member) => member.vote === null)).toBe(true)
+  })
+
+  it("stores a subtle round summary in room history when votes are revealed", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const three = joinRoomState({
+      room: two,
+      memberId: "33333333-3333-4333-8333-333333333333",
+      name: "Sam",
+      now: 1400,
+    })
+    const withVotes = castVoteState({
+      room: castVoteState({
+        room: castVoteState({
+          room: three,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "3",
+          now: 1500,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1600,
+      }),
+      memberId: "33333333-3333-4333-8333-333333333333",
+      vote: "8",
+      now: 1700,
+    })
+
+    const revealedRoom = revealRoomState({
+      room: withVotes,
+      now: 1800,
+    })
+
+    expect(revealedRoom.history).toEqual([
+      {
+        average: "5.3",
+        mode: "3",
+        participantCount: 3,
+        result: "5",
+        revealedAt: 1800,
+        round: 1,
+        voteCount: 3,
+      },
+    ])
+  })
+
+  it("reroll removes only the current reveal from history", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+
+    const firstReveal = revealRoomState({
+      room: castVoteState({
+        room: castVoteState({
+          room: two,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "3",
+          now: 1400,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1500,
+      }),
+      now: 1600,
+    })
+
+    const acceptedReset = resetRoomState({
+      room: firstReveal,
+      now: 1700,
+    })
+
+    const secondReveal = revealRoomState({
+      room: castVoteState({
+        room: castVoteState({
+          room: acceptedReset,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "5",
+          now: 1800,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "8",
+        now: 1900,
+      }),
+      now: 2000,
+    })
+
+    const rerolledRoom = rerollRoomState({
+      room: secondReveal,
+      now: 2100,
+    })
+
+    expect(secondReveal.history).toHaveLength(2)
+    expect(rerolledRoom.revealed).toBe(false)
+    expect(rerolledRoom.result).toBeNull()
+    expect(rerolledRoom.members.every((member) => member.vote === null)).toBe(true)
+    expect(rerolledRoom.history).toEqual([firstReveal.history[0]])
+  })
+
+  it("keeps every revealed round in history without truncating older entries", () => {
+    const roomId = "amber-anchor-12"
+    const memberOneId = "11111111-1111-4111-8111-111111111111"
+    const memberTwoId = "22222222-2222-4222-8222-222222222222"
+
+    let room = createRoomState({ roomId, now: 1000 })
+    room = joinRoomState({
+      room,
+      memberId: memberOneId,
+      name: "Kai",
+      now: 1100,
+    })
+    room = joinRoomState({
+      room,
+      memberId: memberTwoId,
+      name: "Noa",
+      now: 1200,
+    })
+
+    for (let round = 1; round <= 7; round += 1) {
+      room = castVoteState({
+        room,
+        memberId: memberOneId,
+        vote: "3",
+        now: 1300 + round,
+      })
+      room = castVoteState({
+        room,
+        memberId: memberTwoId,
+        vote: "5",
+        now: 1400 + round,
+      })
+      room = revealRoomState({
+        room,
+        now: 1500 + round,
+      })
+      room = resetRoomState({
+        room,
+        now: 1600 + round,
+      })
+    }
+
+    expect(room.history).toHaveLength(7)
+    expect(room.history.map((entry) => entry.round)).toEqual([7, 6, 5, 4, 3, 2, 1])
+  })
+
+  it("allows the revealed result to be edited and keeps history in sync", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const revealedRoom = revealRoomState({
+      room: castVoteState({
+        room: castVoteState({
+          room: two,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "3",
+          now: 1400,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1500,
+      }),
+      now: 1600,
+    })
+
+    const updatedRoom = setRoomResultState({
+      room: revealedRoom,
+      result: "8",
+      now: 1700,
+    })
+
+    expect(updatedRoom.result).toBe("8")
+    expect(updatedRoom.history[0]?.result).toBe("8")
   })
 
   it("averages only numeric votes", () => {
@@ -121,7 +328,47 @@ describe("planning poker domain rules", () => {
     expect(formatAverageVote(calculateNumericAverage(withVotes.members))).toBe("4")
   })
 
-  it("reports the most common revealed vote and cast vote count", () => {
+  it("reports the card closest to the numeric average as the result", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const three = joinRoomState({
+      room: two,
+      memberId: "33333333-3333-4333-8333-333333333333",
+      name: "Sam",
+      now: 1400,
+    })
+    const withVotes = castVoteState({
+      room: castVoteState({
+        room: castVoteState({
+          room: three,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "3",
+          now: 1500,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1600,
+      }),
+      memberId: "33333333-3333-4333-8333-333333333333",
+      vote: "8",
+      now: 1700,
+    })
+
+    expect(calculateAverageResultCard(withVotes.members)).toBe("5")
+  })
+
+  it("reports the mode revealed vote and cast vote count", () => {
     const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
     const one = joinRoomState({
       room: startRoom,
@@ -160,5 +407,72 @@ describe("planning poker domain rules", () => {
 
     expect(calculateVoteMode(withVotes.members)).toBe("5")
     expect(countCastVotes(withVotes.members)).toBe(3)
+  })
+
+  it("does not count spectator votes toward total votes", () => {
+    const room = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+
+    expect(
+      countCastVotes([
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          joinedAt: 1200,
+          name: "Kai",
+          role: "participant",
+          vote: "5",
+        },
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          joinedAt: 1300,
+          name: "Noa",
+          role: "spectator",
+          vote: "8",
+        },
+        ...room.members,
+      ]),
+    ).toBe(1)
+  })
+
+  it("flags only the revealed low and high outliers away from the mode", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const three = joinRoomState({
+      room: two,
+      memberId: "33333333-3333-4333-8333-333333333333",
+      name: "Sam",
+      now: 1400,
+    })
+    const withVotes = castVoteState({
+      room: castVoteState({
+        room: castVoteState({
+          room: three,
+          memberId: "11111111-1111-4111-8111-111111111111",
+          vote: "3",
+          now: 1500,
+        }),
+        memberId: "22222222-2222-4222-8222-222222222222",
+        vote: "5",
+        now: 1600,
+      }),
+      memberId: "33333333-3333-4333-8333-333333333333",
+      vote: "8",
+      now: 1700,
+    })
+
+    expect(getVoteExtremesOutsideMode(withVotes.members)).toEqual({
+      highestVote: "8",
+      lowestVote: null,
+    })
   })
 })

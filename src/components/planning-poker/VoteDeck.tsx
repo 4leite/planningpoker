@@ -8,11 +8,13 @@ export const VoteDeck = ({
   disabled,
   isPending,
   onVote,
+  preventButtonFocus = false,
 }: {
   selectedVote: CardValue | null
   disabled: boolean
   isPending: boolean
   onVote: (vote: CardValue) => void
+  preventButtonFocus?: boolean
 }) => (
   <div className="grid w-full grid-cols-5 gap-2 sm:gap-3">
     {cardValues.map((cardValue) => {
@@ -22,6 +24,11 @@ export const VoteDeck = ({
           key={cardValue}
           type="button"
           disabled={disabled || isPending}
+          onMouseDown={(event) => {
+            if (preventButtonFocus) {
+              event.preventDefault()
+            }
+          }}
           onClick={() => onVote(cardValue)}
           variant="outline"
           className={cn(
