@@ -72,10 +72,9 @@ export const RoomScreen = ({
   const queryClient = useQueryClient()
   const { roomMenuPortalElement } = useMenuState()
   const { identity, rememberDisplayName } = usePlanningPokerIdentity()
-  const { room, setRoom } = useRoomRealtime({
+  const { room, setRoom, isLoading } = useRoomRealtime({
     initialRoom,
     roomId,
-    enabled: initialRoom !== null,
   })
   const joinRoomFn = useServerFn(joinRoom)
   const leaveRoomFn = useServerFn(leaveRoom)
@@ -320,6 +319,10 @@ export const RoomScreen = ({
         void navigate({ to: "/" })
       },
     })
+  }
+
+  if (isLoading) {
+    return <div className="text-muted-foreground text-sm">loading room...</div>
   }
 
   if (!room) {

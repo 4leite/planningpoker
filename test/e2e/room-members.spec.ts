@@ -42,8 +42,8 @@ test("8 members can join the same room and see each other", async ({
 
   const roomUrl = await test.step("create room", async () => {
     await creatorPage.goto("/")
-    await creatorPage.getByRole("button", { name: "create", exact: true }).click()
-    await expect(creatorPage).toHaveURL(/\/rooms\//)
+    await creatorPage.getByRole("button", { name: "create new table" }).click()
+    await expect(creatorPage).toHaveURL(/\/r\//)
     const url = creatorPage.url()
     testInfo.annotations.push({ type: "room-url", description: url })
     console.log(`\n🃏  Room URL: ${url}\n`)
@@ -78,8 +78,8 @@ test("reloading the room keeps the same member joined", async ({ browser }) => {
   const page = await context.newPage()
 
   await page.goto("/")
-  await page.getByRole("button", { name: "create", exact: true }).click()
-  await expect(page).toHaveURL(/\/rooms\//)
+  await page.getByRole("button", { name: "create new table" }).click()
+  await expect(page).toHaveURL(/\/r\//)
 
   await page.getByPlaceholder("name").fill("Alice")
   await page.getByRole("button", { name: "join", exact: true }).click()
@@ -98,16 +98,16 @@ test("creating a new room reuses the saved display name", async ({ browser }) =>
   const page = await context.newPage()
 
   await page.goto("/")
-  await page.getByRole("button", { name: "create", exact: true }).click()
-  await expect(page).toHaveURL(/\/rooms\//)
+  await page.getByRole("button", { name: "create new table" }).click()
+  await expect(page).toHaveURL(/\/r\//)
 
   await page.getByPlaceholder("name").fill("Alice")
   await page.getByRole("button", { name: "join", exact: true }).click()
   await expect(page.getByText("Alice", { exact: true })).toBeVisible()
 
   await page.goto("/")
-  await page.getByRole("button", { name: "create", exact: true }).click()
-  await expect(page).toHaveURL(/\/rooms\//)
+  await page.getByRole("button", { name: "create new table" }).click()
+  await expect(page).toHaveURL(/\/r\//)
 
   await expect(page.getByPlaceholder("name")).toHaveValue("Alice")
   await page.getByRole("button", { name: "join", exact: true }).click()

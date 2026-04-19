@@ -79,8 +79,8 @@ test("seed room for manual join", async ({ browser, createMember }, testInfo) =>
 
   const roomUrl = await test.step("create room", async () => {
     await creatorPage.goto("/")
-    await creatorPage.getByRole("button", { name: "create", exact: true }).click()
-    await expect(creatorPage).toHaveURL(/\/rooms\//)
+    await creatorPage.getByRole("button", { name: "create new table" }).click()
+    await expect(creatorPage).toHaveURL(/\/r\//)
     const url = creatorPage.url()
     testInfo.annotations.push({ type: "room-url", description: url })
     console.log(`\nRoom ready for manual join: ${url}\n`)

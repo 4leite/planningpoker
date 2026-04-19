@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
+import { getRequest, setResponseHeader } from "@tanstack/react-start/server"
 import { z } from "zod"
 
 import {
@@ -16,6 +16,8 @@ import {
 import { generateRoomId } from "#/lib/room-id"
 import { assertRoomCreateAllowed } from "#/lib/room-rate-limit.server"
 import { createRoom, getRoomSnapshot, mutateRoom, type RoomBackendConfig } from "#/lib/room.server"
+
+const createRoomInputSchema = z.object({})
 
 const roomIdInputSchema = z.object({
   roomId: roomIdSchema,
@@ -75,7 +77,9 @@ const getRoomBackend = (): RoomBackendConfig => {
   throw new Error("REDIS_URL is not configured")
 }
 
-export const createRoomFn = createServerFn({ method: "POST" }).handler(async () => {
+export const createRoomFn = createServerFn({ method: "POST" })
+  .inputValidator(createRoomInputSchema)
+  .handler(async () => {
   assertRoomCreateAllowed(getRequest(), Date.now())
 
   const backend = getRoomBackend()
@@ -95,6 +99,7 @@ export const createRoomFn = createServerFn({ method: "POST" }).handler(async () 
 export const getRoomSnapshotFn = createServerFn({ method: "GET" })
   .inputValidator(roomIdInputSchema)
   .handler(async ({ data }) => {
+    setResponseHeader("Cache-Control", "no-store")
     const backend = getRoomBackend()
     return getRoomSnapshot(backend, data.roomId)
   })
