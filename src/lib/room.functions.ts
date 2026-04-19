@@ -8,10 +8,12 @@ import {
   changeRoleState,
   joinRoomState,
   leaveRoomState,
+  rerollRoomState,
   resetRoomState,
   revealRoomState,
   roomIdSchema,
   roomMemberRoleSchema,
+  setRoomResultState,
 } from "#/lib/planning-poker"
 import { generateRoomId } from "#/lib/room-id"
 import { assertRoomCreateAllowed } from "#/lib/room-rate-limit.server"
@@ -44,6 +46,11 @@ const castVoteInputSchema = z.object({
   roomId: roomIdSchema,
   memberId: z.string().uuid(),
   vote: cardValueSchema,
+})
+
+const setResultInputSchema = z.object({
+  roomId: roomIdSchema,
+  result: cardValueSchema,
 })
 
 const getRoomBackend = (): RoomBackendConfig => {
@@ -80,21 +87,21 @@ const getRoomBackend = (): RoomBackendConfig => {
 export const createRoomFn = createServerFn({ method: "POST" })
   .inputValidator(createRoomInputSchema)
   .handler(async () => {
-  assertRoomCreateAllowed(getRequest(), Date.now())
+    assertRoomCreateAllowed(getRequest(), Date.now())
 
-  const backend = getRoomBackend()
+    const backend = getRoomBackend()
 
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const roomId = generateRoomId()
-    const room = await createRoom(backend, roomId, Date.now())
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const roomId = generateRoomId()
+      const room = await createRoom(backend, roomId, Date.now())
 
-    if (room) {
-      return { roomId: room.roomId }
+      if (room) {
+        return { roomId: room.roomId }
+      }
     }
-  }
 
-  throw new Error("room_id_generation_failed")
-})
+    throw new Error("room_id_generation_failed")
+  })
 
 export const getRoomSnapshotFn = createServerFn({ method: "GET" })
   .inputValidator(roomIdInputSchema)
@@ -208,6 +215,43 @@ export const resetRound = createServerFn({ method: "POST" })
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
       resetRoomState({
         room: currentRoom,
+        now: Date.now(),
+      }),
+    )
+
+    if (!room) {
+      throw new Error("room_not_found")
+    }
+
+    return room
+  })
+
+export const rerollRound = createServerFn({ method: "POST" })
+  .inputValidator(roomIdInputSchema)
+  .handler(async ({ data }) => {
+    const backend = getRoomBackend()
+    const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
+      rerollRoomState({
+        room: currentRoom,
+        now: Date.now(),
+      }),
+    )
+
+    if (!room) {
+      throw new Error("room_not_found")
+    }
+
+    return room
+  })
+
+export const setRoomResult = createServerFn({ method: "POST" })
+  .inputValidator(setResultInputSchema)
+  .handler(async ({ data }) => {
+    const backend = getRoomBackend()
+    const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
+      setRoomResultState({
+        room: currentRoom,
+        result: data.result,
         now: Date.now(),
       }),
     )
