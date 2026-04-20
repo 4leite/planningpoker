@@ -83,6 +83,7 @@ export const HomeScreen = () => {
           onChange={(event) => setJoinRoomId(event.target.value)}
           maxLength={maxLength()}
           placeholder="room id"
+          aria-label="Room id"
           className="w-full text-center"
         />
 

@@ -30,10 +30,11 @@ export const RoomHistory = ({ history }: { history: RoomHistoryEntry[] }) => {
   }
 
   return (
-    <section className="w-full max-w-5xl">
+    <section aria-label="Room history" className="w-full max-w-5xl">
       <ol className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] justify-center">
         <li
           key="headings"
+          aria-label="History headings"
           className="text-muted-foreground/75 col-span-6 mx-auto grid grid-cols-subgrid items-center gap-4 text-lg font-medium uppercase sm:max-w-md sm:text-xs"
         >
           <div />
@@ -53,6 +54,7 @@ export const RoomHistory = ({ history }: { history: RoomHistoryEntry[] }) => {
         {history.map((entry, index) => (
           <li
             key={entry.revealedAt}
+            aria-label={`Round ${entry.round} history`}
             className="text-foreground/85 col-span-6 grid grid-cols-subgrid gap-4 text-center text-sm transition-transform sm:text-base"
             style={{
               opacity: Math.max(0.18, 1 - index * 0.18),

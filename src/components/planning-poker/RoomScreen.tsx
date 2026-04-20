@@ -436,6 +436,7 @@ export const RoomScreen = ({
                   onClick={handleCopyLink}
                   variant="ghost"
                   size="icon"
+                  aria-label="Copy room link"
                   className="size-8 sm:size-9"
                 >
                   <Share1Icon />
@@ -451,6 +452,7 @@ export const RoomScreen = ({
                   <Switch
                     checked={currentMember?.role === "spectator"}
                     disabled={!currentMember || isPending}
+                    aria-label="Spectate"
                     onCheckedChange={(checked) =>
                       handleRoleSwitch(checked ? "spectator" : "participant")
                     }
@@ -492,6 +494,7 @@ export const RoomScreen = ({
                 <div className="flex w-full justify-center">
                   <Input
                     id="result"
+                    aria-label="Room result"
                     value={resultInput}
                     onChange={(event) => setResultInput(event.target.value.trim())}
                     onFocus={() => {

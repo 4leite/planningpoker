@@ -135,6 +135,12 @@ export default defineConfig({
       },
     },
     {
+      files: ["test/**/*.ts", "test/**/*.tsx"],
+      rules: {
+        "no-empty-pattern": "off",
+      },
+    },
+    {
       files: ["**/*.test.ts", "**/*.spec.ts"],
       rules: {
         "tohuhono/no-type-assertion-except-object-keys": "off",
