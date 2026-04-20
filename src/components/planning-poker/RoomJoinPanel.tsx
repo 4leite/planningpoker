@@ -38,6 +38,7 @@ export const RoomJoinPanel = ({
             value={joinName}
             onChange={(event) => onJoinNameChange(event.target.value)}
             placeholder="name"
+            aria-label="Display name"
             className="h-11"
             autoFocus
           />

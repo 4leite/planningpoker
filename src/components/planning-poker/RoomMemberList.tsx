@@ -49,6 +49,7 @@ export const RoomMemberList = ({
         return (
           <article
             key={member.id}
+            aria-label={`Seat for ${member.name}`}
             className={cn(
               "bg-card pointer-events-auto absolute w-22 -translate-x-1/2 -translate-y-1/2 rounded-lg border p-2 text-center shadow-sm transition-colors sm:w-28",
               isCurrent && "border-primary",

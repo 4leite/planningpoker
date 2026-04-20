@@ -1,0 +1,122 @@
+import { type MemberSession, expect, test } from "./fixtures/room"
+import {
+  acceptRound,
+  castVote,
+  overrideResult,
+  revealVotes,
+  rerollRound,
+} from "./support/member-actions"
+import {
+  revealButton,
+  roomHistoryRow,
+  roomResultInput,
+  roomSeat,
+  seatStatus,
+  voteProgress,
+} from "./support/room-selectors"
+
+const setupTwoMembers = async (
+  createRoomWithCreator: (
+    creatorName: string,
+  ) => Promise<{ roomUrl: string; creator: MemberSession }>,
+  openMember: (roomUrl: string, name: string) => Promise<MemberSession>,
+) => {
+  const { roomUrl, creator } = await createRoomWithCreator("Alice")
+  const bob = await openMember(roomUrl, "Bob")
+
+  return {
+    alice: creator,
+    bob,
+  }
+}
+
+test.describe("Room voting", () => {
+  test("votes stay hidden until reveal and update other clients live @smoke @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { alice, bob } = await setupTwoMembers(createRoomWithCreator, openMember)
+
+    await castVote(alice.page, "3")
+    await expect(seatStatus(bob.page, "Alice", "voted")).toBeVisible()
+    await expect(roomSeat(bob.page, "Alice").getByText("3", { exact: true })).toHaveCount(0)
+
+    await castVote(bob.page, "5")
+    await expect(seatStatus(alice.page, "Bob", "voted")).toBeVisible()
+
+    await revealVotes(alice.page)
+
+    await expect(seatStatus(alice.page, "Bob", "5")).toBeVisible()
+    await expect(seatStatus(bob.page, "Alice", "3")).toBeVisible()
+  })
+
+  test("reveal shows the computed result and a history row @smoke @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { alice, bob } = await setupTwoMembers(createRoomWithCreator, openMember)
+
+    await castVote(alice.page, "3")
+    await castVote(bob.page, "5")
+    await revealVotes(alice.page)
+
+    await expect(roomResultInput(alice.page)).toHaveValue("3")
+    await expect(roomResultInput(bob.page)).toHaveValue("3")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("4")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("2/2")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("3")
+  })
+
+  test("accept resets the room into a fresh hidden round @smoke @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { alice, bob } = await setupTwoMembers(createRoomWithCreator, openMember)
+
+    await castVote(alice.page, "3")
+    await castVote(bob.page, "5")
+    await revealVotes(alice.page)
+    await acceptRound(alice.page)
+
+    await expect(revealButton(alice.page)).toBeVisible()
+    await expect(revealButton(bob.page)).toBeVisible()
+    await expect(voteProgress(alice.page, "0 / 2")).toBeVisible()
+    await expect(voteProgress(bob.page, "0 / 2")).toBeVisible()
+    await expect(roomHistoryRow(alice.page, 1)).toBeVisible()
+  })
+
+  test("reroll removes the latest revealed round and returns to a hidden round @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { alice, bob } = await setupTwoMembers(createRoomWithCreator, openMember)
+
+    await castVote(alice.page, "3")
+    await castVote(bob.page, "5")
+    await revealVotes(alice.page)
+    await rerollRound(alice.page)
+
+    await expect(revealButton(alice.page)).toBeVisible()
+    await expect(revealButton(bob.page)).toBeVisible()
+    await expect(roomHistoryRow(alice.page, 1)).toHaveCount(0)
+    await expect(voteProgress(alice.page, "0 / 2")).toBeVisible()
+  })
+
+  test("result override updates the revealed room live @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { alice, bob } = await setupTwoMembers(createRoomWithCreator, openMember)
+
+    await castVote(alice.page, "3")
+    await castVote(bob.page, "5")
+    await revealVotes(alice.page)
+    await overrideResult(alice.page, "5")
+
+    await expect(roomResultInput(alice.page)).toHaveValue("5")
+    await expect(roomResultInput(bob.page)).toHaveValue("5")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("4")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("5")
+    await expect(roomHistoryRow(alice.page, 1)).toContainText("2/2")
+  })
+})
