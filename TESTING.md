@@ -4,7 +4,7 @@
 
 - Use unit tests for pure logic with real branching and no framework or persistence dependencies.
 - Use Playwright for user-visible behavior that crosses React components, hooks, server functions,
-  routing, realtime fanout, or Redis-backed state.
+  routing, realtime fanout, or Durable Object-backed state.
 - Let `tsc` cover trivial wiring, re-exports, and type-only integration.
 
 ## Unit test scope
@@ -40,9 +40,9 @@ The test should protect against regressions in _our_ logic, not verify library b
 
 ## Playwright runtime
 
-- `playwright.config.ts` boots a fresh containerized app with `pnpm docker:down && pnpm docker:up`.
-- If targeted Playwright runs fail because of stale repo test infra or a port conflict, run
-  `pnpm docker:down` and retry.
+- `playwright.config.ts` boots a fresh preview server with `pnpm preview:e2e`.
+- If targeted Playwright runs fail because of a stale preview process or a port conflict, stop the
+  process using port `3000` and retry.
 - Prefer targeted specs or grep filters during development instead of defaulting to the entire e2e
   suite.
 
