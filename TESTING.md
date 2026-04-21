@@ -41,7 +41,6 @@ The test should protect against regressions in _our_ logic, not verify library b
 ## Playwright runtime
 
 - `playwright.config.ts` boots a fresh containerized app with `pnpm docker:down && pnpm docker:up`.
-- `reuseExistingServer` is disabled. Do not plan around reusing an existing process on port 3000.
 - If targeted Playwright runs fail because of stale repo test infra or a port conflict, run
   `pnpm docker:down` and retry.
 - Prefer targeted specs or grep filters during development instead of defaulting to the entire e2e

@@ -404,9 +404,9 @@ This should still be treated as a rewrite of the room sync model, but not a tran
 Status as of 2026-04-21:
 
 - Phase 1: mostly complete
-- Phase 2: substantially complete
-- Phase 3: partially complete
-- Phase 4: partially complete
+- Phase 2: complete
+- Phase 3: complete
+- Phase 4: complete
 
 ### Phase 1: Preserve Transport, Move Authority
 
@@ -437,8 +437,10 @@ Progress:
 - complete: `joinRoom` continues to keep server-side uniqueness checks while using a thinner
   persistence path
 - complete: server-owned `version` and `updatedAt` stamping still happens only during persistence
-- remaining: document exact field ownership and payload expectations per action so the thin-server
-  boundary is explicit rather than inferred from the code
+- complete: per-action request shapes now live in `src/lib/room-sync.ts` instead of being scattered
+  across the server-function module
+- complete: thin persistence helpers are pinned by focused unit tests in
+  `src/lib/room.server.test.ts`
 
 ### Phase 3: Isolate Reveal As The Special Case
 
@@ -449,10 +451,10 @@ Progress:
 
 - complete: `revealVotes` remains the only write path that still uses reveal/history derivation
   semantics
-- partial: reveal is now the semantic exception in practice, but the codebase still shares the
-  reveal helper from the domain module rather than isolating it behind a distinct server-only reveal
-  boundary
-- remaining: make the reveal exception more explicit in code structure and repo docs
+- complete: reveal now sits behind a distinct server-only wrapper module in
+  `src/lib/room-reveal.server.ts`
+- complete: reveal-only history behavior is locked by focused unit coverage so it cannot silently
+  bleed back into the shallow write helpers
 
 ### Phase 4: Simplify Client Reconciliation
 
@@ -464,11 +466,10 @@ Progress:
 
 - complete: the client already owns optimistic room transitions in `RoomScreen`
 - complete: reconciliation still happens against server-returned snapshots and SSE full-room updates
-- partial: last-write-wins remains the effective behavior because the server accepts the latest
-  successful write, but this is still implicit in the persistence layer rather than called out as a
-  formal contract in code or docs
-- remaining: document the reconciliation contract and decide whether to thin the client-to-server
-  payloads further so the ownership split is more obvious
+- complete: last-write-wins reconciliation is now explicit in `src/lib/room-sync.ts` and pinned by
+  `src/lib/room-sync.test.ts`
+- complete: the client-to-server payloads remain action-shaped rather than moving toward a generic
+  room-patch API
 
 ## Recommended API Direction
 
@@ -527,12 +528,11 @@ appropriate:
 - reveal-history generation remains server-side by design
 - the server still owns versions, timestamps, and expiry
 
-## Suggested Next Artifact
+## Current Outcome
 
-The next useful artifact after this note is a concrete migration design with:
+The refactor now has an explicit thin-server contract:
 
-- exact payload shapes per server function
-- field ownership rules per action
-- which current helpers stay shared versus client-only
-- which server code paths collapse to shallow persistence helpers
-- a phase order that preserves a working app throughout the rewrite
+- request payload shapes are centralized in `src/lib/room-sync.ts`
+- the client owns optimistic transitions and snapshot reconciliation
+- non-reveal server writes stay shallow and stamp server-owned metadata
+- reveal remains the only history-generating server-side write
