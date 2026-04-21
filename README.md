@@ -119,6 +119,17 @@ Some current v1 behaviors are deliberate trade-offs:
 - the roster is sticky membership for the room lifetime, not strict live presence
 - rooms do not auto-extend past the one-day TTL
 
+## Room Sync Model
+
+The room sync path is intentionally client-first and high-trust:
+
+- the client owns optimistic room transitions for non-reveal actions
+- server functions validate request shape, preserve uniqueness checks, and persist the next snapshot
+- reveal remains the server-side exception because history generation stays append-only and durable
+- room updates reconcile as full snapshots, with the highest room version winning in the client
+  cache
+- stale writes are not rejected; last accepted write wins by design
+
 ## Tests
 
 The automated tests currently focus on the shared planning-poker domain rules in
