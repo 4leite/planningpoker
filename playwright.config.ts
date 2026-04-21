@@ -13,7 +13,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm docker:down && pnpm docker:up",
     url: "http://127.0.0.1:3000",
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 900_000,
     stdout: "pipe",
     stderr: "pipe",
