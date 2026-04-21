@@ -16,6 +16,7 @@ The current v1 product shape is:
 ## Stack
 
 - TanStack Start with React 19
+- Cloudflare Workers local runtime via the Cloudflare Vite plugin
 - TanStack Router file-based routes
 - Tailwind CSS v4
 - Redis via the `redis` client in production
@@ -23,7 +24,9 @@ The current v1 product shape is:
 
 ## Environment
 
-Production should use Redis:
+Cloudflare Worker configuration lives in `wrangler.jsonc`.
+
+Production should use Redis until the Durable Objects cutover lands:
 
 ```bash
 REDIS_URL=rediss://...
@@ -61,16 +64,20 @@ Install dependencies and start the app:
 
 ```bash
 pnpm install
+pnpm cf-typegen
 pnpm dev
 ```
 
-The dev server runs on port `3000`.
+The dev server runs on port `3000` inside the local Cloudflare Worker runtime.
 
 If you want local development to avoid Redis entirely, run:
 
 ```bash
 ROOM_BACKEND=memory pnpm dev
 ```
+
+That is the default test harness mode during the migration to Durable Objects. It keeps the current
+room behavior green while the runtime boundary changes to workerd.
 
 ## Validation
 
@@ -109,6 +116,13 @@ The main user-facing routes are:
 - `/` for create-or-join landing flow
 - `/rooms/$room` for the room UI
 - `/api/rooms/$room/events` for SSE room updates
+
+## Cloudflare Runtime
+
+- `src/server.ts` is the custom Worker entrypoint for TanStack Start plus named Worker exports.
+- `src/lib/room-durable-object.server.ts` is the room Durable Object export surface for the
+  migration.
+- `wrangler.jsonc` defines the Worker runtime, compatibility flags, and Durable Object bindings.
 
 ## Product Notes
 

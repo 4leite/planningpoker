@@ -1,7 +1,6 @@
 import { ExitIcon, Share1Icon } from "@radix-ui/react-icons"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { useServerFn } from "@tanstack/react-start"
 import { Button, buttonVariants } from "@tohuhono/ui/button"
 import { Card, CardContent } from "@tohuhono/ui/card"
 import { Input } from "@tohuhono/ui/input"
@@ -26,17 +25,6 @@ import {
   type CardValue,
   type RoomState,
 } from "#/lib/planning-poker"
-import { roomQueryKey } from "#/lib/room-query"
-import {
-  castVote,
-  changeRole,
-  joinRoom,
-  leaveRoom,
-  rerollRound,
-  resetRound,
-  revealVotes,
-  setRoomResult,
-} from "#/lib/room.functions"
 
 import { RoomHistory } from "./RoomHistory"
 import { RoomJoinPanel } from "./RoomJoinPanel"
@@ -77,21 +65,12 @@ export const RoomScreen = ({
   roomId: string
 }) => {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { roomMenuPortalElement } = useMenuState()
   const { identity, rememberDisplayName } = usePlanningPokerIdentity()
-  const { room, setRoom, isLoading } = useRoomRealtime({
+  const { room, setRoom, sendAction, isLoading } = useRoomRealtime({
     initialRoom,
     roomId,
   })
-  const joinRoomFn = useServerFn(joinRoom)
-  const leaveRoomFn = useServerFn(leaveRoom)
-  const changeRoleFn = useServerFn(changeRole)
-  const castVoteFn = useServerFn(castVote)
-  const revealVotesFn = useServerFn(revealVotes)
-  const resetRoundFn = useServerFn(resetRound)
-  const rerollRoundFn = useServerFn(rerollRound)
-  const setRoomResultFn = useServerFn(setRoomResult)
   const [joinName, setJoinName] = useState(identity?.displayName ?? "")
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [resultInput, setResultInput] = useState("")
@@ -126,14 +105,11 @@ export const RoomScreen = ({
   }
 
   const createRoomMutationOptions = <TVars,>(
+    createAction: (variables: TVars) => Parameters<typeof sendAction>[0],
     optimisticUpdate?: (currentRoom: RoomState, variables: TVars) => RoomState,
   ) => ({
-    onMutate: async (variables: TVars) => {
-      await queryClient.cancelQueries({ queryKey: roomQueryKey(roomId) })
-
-      const previousRoom =
-        queryClient.getQueryData<RoomState | null>(roomQueryKey(roomId)) ?? room ?? null
-
+    onMutate: (variables: TVars) => {
+      const previousRoom = room ?? null
       if (!previousRoom || !optimisticUpdate) {
         return { previousRoom }
       }
@@ -146,8 +122,11 @@ export const RoomScreen = ({
 
       return { previousRoom }
     },
-    onSuccess: (nextRoom: RoomState) => {
-      applyRoomMutation(nextRoom)
+    mutationFn: (variables: TVars) => sendAction(createAction(variables)),
+    onSuccess: (nextRoom: RoomState | null) => {
+      if (nextRoom) {
+        applyRoomMutation(nextRoom)
+      }
     },
     onError: (error: unknown, _variables: TVars, context?: { previousRoom: RoomState | null }) => {
       if (context?.previousRoom) {
@@ -159,147 +138,160 @@ export const RoomScreen = ({
   })
 
   const joinRoomMutation = useMutation({
-    mutationFn: (name: string) => {
-      if (!identity) {
-        throw new Error("Preparing your browser identity. Try again in a moment.")
-      }
+    ...createRoomMutationOptions(
+      (name: string) => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
 
-      return joinRoomFn({
-        data: {
-          roomId,
+        return {
+          type: "room.join",
           memberId: identity.memberId,
           name,
-        },
-      })
-    },
-    ...createRoomMutationOptions((currentRoom, name) => {
-      if (!identity) {
-        return currentRoom
-      }
+        }
+      },
+      (currentRoom, name) => {
+        if (!identity) {
+          return currentRoom
+        }
 
-      return joinRoomState({
-        room: currentRoom,
-        memberId: identity.memberId,
-        name,
-        now: Date.now(),
-      })
-    }),
-  })
-  const leaveRoomMutation = useMutation({
-    mutationFn: () => {
-      if (!identity) {
-        throw new Error("room_member_missing")
-      }
-
-      return leaveRoomFn({
-        data: {
-          roomId,
+        return joinRoomState({
+          room: currentRoom,
           memberId: identity.memberId,
-        },
-      })
-    },
-    ...createRoomMutationOptions<undefined>((currentRoom) => {
-      if (!identity) {
-        return currentRoom
-      }
-
-      return leaveRoomState({
-        room: currentRoom,
-        memberId: identity.memberId,
-        now: Date.now(),
-      })
-    }),
+          name,
+          now: Date.now(),
+        })
+      },
+    ),
   })
-  const changeRoleMutation = useMutation({
-    mutationFn: (role: "participant" | "spectator") => {
-      if (!identity) {
-        throw new Error("room_member_missing")
-      }
 
-      return changeRoleFn({
-        data: {
-          roomId,
+  const leaveRoomMutation = useMutation({
+    ...createRoomMutationOptions(
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.leave",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return leaveRoomState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          now: Date.now(),
+        })
+      },
+    ),
+  })
+
+  const changeRoleMutation = useMutation({
+    ...createRoomMutationOptions(
+      (role: "participant" | "spectator") => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.changeRole",
           memberId: identity.memberId,
           role,
-        },
-      })
-    },
-    ...createRoomMutationOptions((currentRoom, role) => {
-      if (!identity) {
-        return currentRoom
-      }
+        }
+      },
+      (currentRoom, role) => {
+        if (!identity) {
+          return currentRoom
+        }
 
-      return changeRoleState({
-        room: currentRoom,
-        memberId: identity.memberId,
-        role,
-        now: Date.now(),
-      })
-    }),
+        return changeRoleState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          role,
+          now: Date.now(),
+        })
+      },
+    ),
   })
-  const castVoteMutation = useMutation({
-    mutationFn: (vote: CardValue) => {
-      if (!identity) {
-        throw new Error("room_member_missing")
-      }
 
-      return castVoteFn({
-        data: {
-          roomId,
+  const castVoteMutation = useMutation({
+    ...createRoomMutationOptions(
+      (vote: CardValue) => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.castVote",
           memberId: identity.memberId,
           vote,
-        },
-      })
-    },
-    ...createRoomMutationOptions((currentRoom, vote) => {
-      if (!identity) {
-        return currentRoom
-      }
+        }
+      },
+      (currentRoom, vote) => {
+        if (!identity) {
+          return currentRoom
+        }
 
-      return castVoteState({
-        room: currentRoom,
-        memberId: identity.memberId,
-        vote,
-        now: Date.now(),
-      })
-    }),
+        return castVoteState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          vote,
+          now: Date.now(),
+        })
+      },
+    ),
   })
+
   const revealVotesMutation = useMutation({
-    mutationFn: () => revealVotesFn({ data: { roomId } }),
-    ...createRoomMutationOptions<undefined>((currentRoom) =>
-      revealRoomState({
-        room: currentRoom,
-        now: Date.now(),
-      }),
+    ...createRoomMutationOptions(
+      () => ({ type: "room.reveal" }),
+      (currentRoom) =>
+        revealRoomState({
+          room: currentRoom,
+          now: Date.now(),
+        }),
     ),
   })
+
   const resetRoundMutation = useMutation({
-    mutationFn: () => resetRoundFn({ data: { roomId } }),
-    ...createRoomMutationOptions<undefined>((currentRoom) =>
-      resetRoomState({
-        room: currentRoom,
-        now: Date.now(),
-      }),
+    ...createRoomMutationOptions(
+      () => ({ type: "room.reset" }),
+      (currentRoom) =>
+        resetRoomState({
+          room: currentRoom,
+          now: Date.now(),
+        }),
     ),
   })
+
   const rerollRoundMutation = useMutation({
-    mutationFn: () => rerollRoundFn({ data: { roomId } }),
-    ...createRoomMutationOptions<undefined>((currentRoom) =>
-      rerollRoomState({
-        room: currentRoom,
-        now: Date.now(),
-      }),
+    ...createRoomMutationOptions(
+      () => ({ type: "room.reroll" }),
+      (currentRoom) =>
+        rerollRoomState({
+          room: currentRoom,
+          now: Date.now(),
+        }),
     ),
   })
+
   const setRoomResultMutation = useMutation({
-    mutationFn: (nextResult: CardValue) =>
-      setRoomResultFn({ data: { roomId, result: nextResult } }),
-    ...createRoomMutationOptions((currentRoom, nextResult) =>
-      setRoomResultState({
-        room: currentRoom,
+    ...createRoomMutationOptions(
+      (nextResult: CardValue) => ({
+        type: "room.setResult",
         result: nextResult,
-        now: Date.now(),
       }),
+      (currentRoom, nextResult) =>
+        setRoomResultState({
+          room: currentRoom,
+          result: nextResult,
+          now: Date.now(),
+        }),
     ),
   })
 
@@ -401,7 +393,6 @@ export const RoomScreen = ({
     setFeedbackMessage(null)
     leaveRoomMutation.mutate(undefined, {
       onSuccess: () => {
-        queryClient.removeQueries({ queryKey: roomQueryKey(roomId) })
         void navigate({ to: "/" })
       },
     })
