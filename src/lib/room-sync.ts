@@ -37,11 +37,17 @@ export const castVoteRequestSchema = z.object({
   vote: cardValueSchema,
 })
 
-export const revealRoomRequestSchema = roomSnapshotRequestSchema
+export const revealRoomRequestSchema = z.object({
+  roomId: roomIdSchema,
+})
 
-export const resetRoomRequestSchema = roomSnapshotRequestSchema
+export const resetRoomRequestSchema = z.object({
+  roomId: roomIdSchema,
+})
 
-export const rerollRoomRequestSchema = roomSnapshotRequestSchema
+export const rerollRoomRequestSchema = z.object({
+  roomId: roomIdSchema,
+})
 
 export const setRoomResultRequestSchema = z.object({
   roomId: roomIdSchema,

@@ -10,6 +10,7 @@ import {
   createRoomRequestSchema,
   joinRoomRequestSchema,
   leaveRoomRequestSchema,
+  revealRoomRequestSchema,
   rerollRoomRequestSchema,
   resetRoomRequestSchema,
   roomSnapshotRequestSchema,
@@ -167,7 +168,7 @@ export const castVote = createServerFn({ method: "POST" })
   })
 
 export const revealVotes = createServerFn({ method: "POST" })
-  .inputValidator(roomSnapshotRequestSchema)
+  .inputValidator(revealRoomRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
