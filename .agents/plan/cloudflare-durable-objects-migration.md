@@ -58,7 +58,7 @@ runtime, asset serving, bindings, and test harness before changing room behavior
 - [x] The app runs locally in a real Worker-compatible runtime with Durable Object bindings
       available.
 - [x] The current landing and room flows still work locally through the runtime migration and room
-  authority cutover.
+      authority cutover.
 - [x] The existing test suite can be pointed at the local Worker runtime and stay green.
 - [x] Local developer workflow documents how to run the Worker runtime alongside any Redis
       dependency still needed during migration.
@@ -121,12 +121,12 @@ control and deterministic cleanup, not about changing the core room interaction 
 
 ### Acceptance criteria
 
-- [ ] Expiry behavior follows the chosen rule for this POC.
-- [ ] Expired rooms delete their Durable Object storage so abandoned rooms do not accumulate
+- [x] Expiry behavior follows the chosen rule for this POC.
+- [x] Expired rooms delete their Durable Object storage so abandoned rooms do not accumulate
       indefinitely.
-- [ ] Reusing an expired room id creates a fresh room with no residual prior state.
-- [ ] Any visible expired-room behavior is covered at the behavior level.
-- [ ] Cleanup behavior is implemented without reintroducing split authority or external room
+- [x] Reusing an expired room id creates a fresh room with no residual prior state.
+- [x] Any visible expired-room behavior is covered at the behavior level.
+- [x] Cleanup behavior is implemented without reintroducing split authority or external room
       storage.
 
 ### Green-green validation
