@@ -7,7 +7,7 @@
 - UI primitives: prefer `@tohuhono/ui`; local `shadcn` is configured for Base UI with
   `components.json` when a primitive is not available there
 - Devtools: `@tanstack/devtools-vite`, `@tanstack/react-devtools`, `@tanstack/react-router-devtools`
-- Deployment target: Vercel via Nitro
+- Deployment target: Cloudflare Workers via Wrangler
 
 - CRITICAL: Read [CODESTYLE](.agents/CODESTYLE.md) before writing any code
 
@@ -15,16 +15,20 @@
 
 # Skill mappings - when working in these areas, load the linked skill file into context.
 
-skills: - task: "working on TanStack Start React app structure, route shells, loaders, or
-server/client boundaries" load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md" -
-task: "configuring Vite, source inspection, or TanStack devtools integration" load:
-"node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md" - task: "changing route
-generation, bundler routing config, or code splitting behavior" load:
-"node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md" - task: "deploying this app to
-Vercel with Nitro or changing SSR and prerender behavior" # To load this skill, run: npx
-@tanstack/intent@latest list | grep deployment - task: "adding server functions, API-style server
-routes, or secret/env-boundary code" # To load this skill, run: npx @tanstack/intent@latest list |
-grep -E 'execution-model|server-functions|server-routes'
+skills:
+
+- task: "working on TanStack Start React app structure, route shells, loaders, or server/client
+  boundaries" load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md"
+- task: "configuring Vite, source inspection, or TanStack devtools integration" load:
+  "node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
+- task: "changing route generation, bundler routing config, or code splitting behavior" load:
+  "node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md"
+- task: "deploying this app to Vercel with Nitro, Cloudflare Workers, or changing SSR and prerender
+  behavior" load:
+  "node_modules/.pnpm/@tanstack+start-client-core@1.167.17/node_modules/@tanstack/start-client-core/skills/start-core/deployment/SKILL.md"
+- task: "adding server functions, API-style server routes, or secret/env-boundary code" To load this
+  skill, run: npx @tanstack/intent@latest list | grep -E
+  'execution-model|server-functions|server-routes'
 
 <!-- intent-skills:end -->
 
@@ -48,7 +52,12 @@ grep -E 'execution-model|server-functions|server-routes'
   equivalents.
 - The current blank scaffold includes starter marketing UI and an `about` route; replace those
   deliberately rather than layering new product UI on top of them by accident.
-- `.vercel/` contains local Vercel project metadata and may need relinking per environment.
+- Prefer `pnpm test:playwright <specs-or-flags>` for targeted browser coverage; use the `test:e2e:*`
+  scripts for the canned suites.
+- `playwright.config.ts` starts a fresh Worker preview server with `pnpm preview:e2e`
+- If Playwright startup fails because port `3000` is already in use, stop the stale preview process
+  and rerun.
+- For branch names, commit summaries, PR titles, and PR bodies, follow `.agents/METADATA.md`.
 
 - CRITICAL: Try to map your task to `pnpm validate` including: lint, check types, build or run tests
 
@@ -57,4 +66,3 @@ grep -E 'execution-model|server-functions|server-routes'
 - [coding style rules and guidelines](.agents/CODESTYLE.md)
 - [git and github metadata](.agents/METADATA.md)
 - [build and deploy](.agents/DEPLOYMENT.md)
-- [redis data model](.agents/REDIS_DATA_MODEL.md)

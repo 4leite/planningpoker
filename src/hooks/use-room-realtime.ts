@@ -1,10 +1,11 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useServerFn } from "@tanstack/react-start"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
-import { roomUpdatedEventSchema, type RoomState } from "#/lib/planning-poker"
-import { roomQueryKey, roomQueryOptions } from "#/lib/room-query"
-import { getRoomSnapshotFn } from "#/lib/room.functions"
+import { type RoomState } from "#/lib/planning-poker"
+import {
+  reconcileRoomSnapshot,
+  roomSocketMessageSchema,
+  type RoomSocketAction,
+} from "#/lib/room-sync"
 
 export const useRoomRealtime = ({
   initialRoom,
@@ -13,82 +14,142 @@ export const useRoomRealtime = ({
   initialRoom: RoomState | null
   roomId: string
 }) => {
-  const queryClient = useQueryClient()
+  const socketRef = useRef<WebSocket | null>(null)
+  const reconnectTimerRef = useRef<number | null>(null)
+  const pendingActionsRef = useRef(
+    new Map<
+      string,
+      { resolve: (room: RoomState | null) => void; reject: (error: Error) => void }
+    >(),
+  )
+  const actionCounterRef = useRef(0)
   const [connectionState, setConnectionState] = useState<
     "idle" | "connecting" | "live" | "reconnecting"
-  >(initialRoom ? "connecting" : "idle")
-  const fetchSnapshot = useServerFn(getRoomSnapshotFn)
-
-  const query = useQuery(
-    roomQueryOptions({
-      roomId,
-      initialData: initialRoom ?? undefined,
-      queryFn: () =>
-        fetchSnapshot({
-          data: {
-            roomId,
-          },
-        }),
-    }),
-  )
-
-  const hasActiveRoom = query.data !== null && query.data !== undefined
+  >("connecting")
+  const [room, setRoomState] = useState<RoomState | null>(initialRoom)
+  const [isLoading, setIsLoading] = useState(true)
 
   const setRoom = (nextRoom: RoomState | null) => {
-    queryClient.setQueryData(roomQueryKey(roomId), (currentRoom: RoomState | null | undefined) => {
-      if (!nextRoom) {
-        return null
-      }
-
-      if (!currentRoom || nextRoom.version >= currentRoom.version) {
-        return nextRoom
-      }
-
-      return currentRoom
-    })
+    setRoomState((currentRoom) =>
+      reconcileRoomSnapshot({
+        currentRoom,
+        nextRoom,
+      }),
+    )
   }
 
   useEffect(() => {
-    if (!hasActiveRoom) {
-      setConnectionState("idle")
-      return
+    let disposed = false
+    let sawMissingRoom = false
+
+    const rejectPendingActions = (error: Error) => {
+      for (const [mutationId, pendingAction] of pendingActionsRef.current) {
+        pendingAction.reject(error)
+        pendingActionsRef.current.delete(mutationId)
+      }
     }
 
-    const eventSource = new EventSource(`/api/rooms/${encodeURIComponent(roomId)}/events`)
-
-    const handleRoomUpdated = (event: Event) => {
-      if (!(event instanceof MessageEvent)) {
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current === null) {
         return
       }
 
-      try {
-        const parsed = roomUpdatedEventSchema.parse(JSON.parse(event.data))
-        setRoom(parsed.room)
+      window.clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
+    }
+
+    const connect = () => {
+      clearReconnectTimer()
+      setConnectionState((currentState) =>
+        currentState === "idle" ? "connecting" : "reconnecting",
+      )
+
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+      const socket = new WebSocket(
+        `${protocol}//${window.location.host}/api/rooms/${encodeURIComponent(roomId)}/socket`,
+      )
+      socketRef.current = socket
+
+      socket.onopen = () => {
         setConnectionState("live")
-      } catch {
+      }
+
+      socket.onmessage = (event) => {
+        try {
+          const message = roomSocketMessageSchema.parse(JSON.parse(event.data))
+          setIsLoading(false)
+
+          if (message.type === "room.snapshot") {
+            sawMissingRoom = message.room === null
+            setRoom(message.room)
+            if (message.mutationId) {
+              pendingActionsRef.current.get(message.mutationId)?.resolve(message.room)
+              pendingActionsRef.current.delete(message.mutationId)
+            }
+            return
+          }
+
+          const error = new Error(message.error)
+          pendingActionsRef.current.get(message.mutationId)?.reject(error)
+          pendingActionsRef.current.delete(message.mutationId)
+        } catch {
+          setConnectionState("reconnecting")
+        }
+      }
+
+      socket.onerror = () => {
         setConnectionState("reconnecting")
+      }
+
+      socket.onclose = () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null
+        }
+
+        if (disposed || sawMissingRoom) {
+          rejectPendingActions(new Error("room_socket_closed"))
+          setConnectionState(sawMissingRoom ? "idle" : "reconnecting")
+          return
+        }
+
+        rejectPendingActions(new Error("room_socket_reconnecting"))
+        setConnectionState("reconnecting")
+        reconnectTimerRef.current = window.setTimeout(connect, 1000)
       }
     }
 
-    eventSource.addEventListener("room.updated", handleRoomUpdated)
-    eventSource.onopen = () => {
-      setConnectionState("live")
-    }
-    eventSource.onerror = () => {
-      setConnectionState("reconnecting")
-    }
+    connect()
 
     return () => {
-      eventSource.removeEventListener("room.updated", handleRoomUpdated)
-      eventSource.close()
+      disposed = true
+      clearReconnectTimer()
+      rejectPendingActions(new Error("room_socket_closed"))
+      socketRef.current?.close()
+      socketRef.current = null
       setConnectionState("idle")
     }
-  }, [hasActiveRoom, roomId])
+  }, [roomId])
+
+  const sendAction = (action: Omit<RoomSocketAction, "mutationId">) => {
+    const socket = socketRef.current
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return Promise.reject(new Error("room_socket_reconnecting"))
+    }
+
+    const mutationId = `${Date.now()}-${actionCounterRef.current}`
+    actionCounterRef.current += 1
+
+    return new Promise<RoomState | null>((resolve, reject) => {
+      pendingActionsRef.current.set(mutationId, { resolve, reject })
+      socket.send(JSON.stringify({ ...action, mutationId }))
+    })
+  }
 
   return {
-    room: query.data ?? null,
+    room,
     setRoom,
+    sendAction,
     connectionState,
-    isLoading: query.isPending,
+    isLoading,
   }
 }

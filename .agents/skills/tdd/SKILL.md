@@ -10,6 +10,16 @@ Work one behavior slice at a time through a strict RED -> GREEN -> REFACTOR loop
 
 Repo testing guidelines [TESTING.md](../../TESTING.md)
 
+Repo execution notes:
+
+- Use `pnpm test` for pure-logic Vitest slices.
+- Use `pnpm test:playwright <specs...>` for targeted browser behaviors.
+- Use `pnpm test:e2e:smoke` or `pnpm validate` when you need broader confidence.
+- React components, hooks, providers, server functions, and realtime room flows are usually best
+  verified through Playwright in this repo.
+- If behavior is already covered and the task is a behavior-preserving refactor, a green-to-green
+  loop is acceptable, but still work one observable behavior slice at a time.
+
 ## Workflow
 
 ### 1. Planning

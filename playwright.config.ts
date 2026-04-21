@@ -11,7 +11,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm docker:up",
+    command: "pnpm preview:e2e",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: false,
     timeout: 900_000,
