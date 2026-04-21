@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RRoomRouteImport } from './routes/r/$room'
-import { Route as ApiRoomsRoomEventsRouteImport } from './routes/api/rooms/$room/events'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,40 +22,31 @@ const RRoomRoute = RRoomRouteImport.update({
   path: '/r/$room',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiRoomsRoomEventsRoute = ApiRoomsRoomEventsRouteImport.update({
-  id: '/api/rooms/$room/events',
-  path: '/api/rooms/$room/events',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/r/$room': typeof RRoomRoute
-  '/api/rooms/$room/events': typeof ApiRoomsRoomEventsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/r/$room': typeof RRoomRoute
-  '/api/rooms/$room/events': typeof ApiRoomsRoomEventsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/r/$room': typeof RRoomRoute
-  '/api/rooms/$room/events': typeof ApiRoomsRoomEventsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/r/$room' | '/api/rooms/$room/events'
+  fullPaths: '/' | '/r/$room'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/r/$room' | '/api/rooms/$room/events'
-  id: '__root__' | '/' | '/r/$room' | '/api/rooms/$room/events'
+  to: '/' | '/r/$room'
+  id: '__root__' | '/' | '/r/$room'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RRoomRoute: typeof RRoomRoute
-  ApiRoomsRoomEventsRoute: typeof ApiRoomsRoomEventsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,20 +65,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RRoomRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/rooms/$room/events': {
-      id: '/api/rooms/$room/events'
-      path: '/api/rooms/$room/events'
-      fullPath: '/api/rooms/$room/events'
-      preLoaderRoute: typeof ApiRoomsRoomEventsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RRoomRoute: RRoomRoute,
-  ApiRoomsRoomEventsRoute: ApiRoomsRoomEventsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

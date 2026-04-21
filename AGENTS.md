@@ -15,16 +15,20 @@
 
 # Skill mappings - when working in these areas, load the linked skill file into context.
 
-skills: - task: "working on TanStack Start React app structure, route shells, loaders, or
-server/client boundaries" load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md" -
-task: "configuring Vite, source inspection, or TanStack devtools integration" load:
-"node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md" - task: "changing route
-generation, bundler routing config, or code splitting behavior" load:
-"node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md" - task: "deploying this app to
-Vercel with Nitro or changing SSR and prerender behavior" # To load this skill, run: npx
-@tanstack/intent@latest list | grep deployment - task: "adding server functions, API-style server
-routes, or secret/env-boundary code" # To load this skill, run: npx @tanstack/intent@latest list |
-grep -E 'execution-model|server-functions|server-routes'
+skills:
+
+- task: "working on TanStack Start React app structure, route shells, loaders, or server/client
+  boundaries" load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md"
+- task: "configuring Vite, source inspection, or TanStack devtools integration" load:
+  "node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
+- task: "changing route generation, bundler routing config, or code splitting behavior" load:
+  "node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md"
+- task: "deploying this app to Vercel with Nitro, Cloudflare Workers, or changing SSR and prerender
+  behavior" load:
+  "node_modules/.pnpm/@tanstack+start-client-core@1.167.17/node_modules/@tanstack/start-client-core/skills/start-core/deployment/SKILL.md"
+- task: "adding server functions, API-style server routes, or secret/env-boundary code" To load this
+  skill, run: npx @tanstack/intent@latest list | grep -E
+  'execution-model|server-functions|server-routes'
 
 <!-- intent-skills:end -->
 
