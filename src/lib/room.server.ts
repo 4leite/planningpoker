@@ -4,6 +4,9 @@ import {
   createRoomState,
   roomUpdatedEventSchema,
   roomStateSchema,
+  type CardValue,
+  type RoomMember,
+  type RoomMemberRole,
   type RoomState,
 } from "#/lib/planning-poker"
 
@@ -65,6 +68,240 @@ const parseRoom = (value: string | null) => {
   }
 
   return roomStateSchema.parse(JSON.parse(value))
+}
+
+const getNameKey = (value: string) => value.trim().toLocaleLowerCase()
+
+const updateStoredRoom = (
+  room: RoomState,
+  {
+    history = room.history,
+    members = room.members,
+    result = room.result,
+    revealed = room.revealed,
+    now,
+  }: {
+    history?: RoomState["history"]
+    members?: RoomMember[]
+    result?: CardValue | null
+    revealed?: boolean
+    now: number
+  },
+) => {
+  if (
+    history === room.history &&
+    members === room.members &&
+    result === room.result &&
+    revealed === room.revealed
+  ) {
+    return room
+  }
+
+  return {
+    ...room,
+    history,
+    members,
+    result,
+    revealed,
+    version: room.version + 1,
+    updatedAt: now,
+  }
+}
+
+export const joinRoomServerState = ({
+  room,
+  memberId,
+  name,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  name: string
+  now: number
+}) => {
+  const duplicateName = room.members.find(
+    (member) => member.id !== memberId && getNameKey(member.name) === getNameKey(name),
+  )
+
+  if (duplicateName) {
+    throw new Error("display_name_taken")
+  }
+
+  const existingMember = room.members.find((member) => member.id === memberId)
+  if (existingMember) {
+    return room
+  }
+
+  return updateStoredRoom(room, {
+    members: room.members.concat({
+      id: memberId,
+      name,
+      role: "participant",
+      vote: null,
+      joinedAt: now,
+    }),
+    now,
+  })
+}
+
+export const leaveRoomServerState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  const nextMembers = room.members.filter((member) => member.id !== memberId)
+
+  if (nextMembers.length === room.members.length) {
+    return room
+  }
+
+  return updateStoredRoom(room, {
+    members: nextMembers,
+    now,
+  })
+}
+
+export const changeRoleServerState = ({
+  room,
+  memberId,
+  role,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  role: RoomMemberRole
+  now: number
+}) => {
+  const member = room.members.find((entry) => entry.id === memberId)
+
+  if (!member) {
+    throw new Error("room_member_missing")
+  }
+
+  if (member.role === role) {
+    return room
+  }
+
+  return updateStoredRoom(room, {
+    members: room.members.map((entry) => {
+      if (entry.id !== memberId) {
+        return entry
+      }
+
+      return {
+        ...entry,
+        role,
+        vote: role === "spectator" ? null : entry.vote,
+      }
+    }),
+    now,
+  })
+}
+
+export const castVoteServerState = ({
+  room,
+  memberId,
+  vote,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  vote: CardValue
+  now: number
+}) => {
+  const member = room.members.find((entry) => entry.id === memberId)
+
+  if (!member) {
+    throw new Error("room_member_missing")
+  }
+
+  if (member.role !== "participant") {
+    throw new Error("spectators_cannot_vote")
+  }
+
+  if (room.revealed) {
+    throw new Error("round_already_revealed")
+  }
+
+  if (member.vote === vote) {
+    return room
+  }
+
+  return updateStoredRoom(room, {
+    members: room.members.map((entry) =>
+      entry.id === memberId
+        ? {
+            ...entry,
+            vote,
+          }
+        : entry,
+    ),
+    now,
+  })
+}
+
+export const resetRoomServerState = ({ room, now }: { room: RoomState; now: number }) => {
+  const didChange = room.revealed || room.members.some((member) => member.vote !== null)
+  if (!didChange) {
+    return room
+  }
+
+  return updateStoredRoom(room, {
+    members: room.members.map((member) => ({
+      ...member,
+      vote: null,
+    })),
+    result: null,
+    revealed: false,
+    now,
+  })
+}
+
+export const rerollRoomServerState = ({ room, now }: { room: RoomState; now: number }) => {
+  const resetRoom = resetRoomServerState({ room, now })
+
+  if (resetRoom === room || !room.revealed || room.history.length === 0) {
+    return resetRoom
+  }
+
+  return updateStoredRoom(resetRoom, {
+    history: room.history.slice(1),
+    now,
+  })
+}
+
+export const setRoomResultServerState = ({
+  room,
+  result,
+  now,
+}: {
+  room: RoomState
+  result: CardValue
+  now: number
+}) => {
+  if (!room.revealed) {
+    throw new Error("round_not_revealed")
+  }
+
+  const nextHistory = room.history[0]
+    ? [
+        {
+          ...room.history[0],
+          result,
+        },
+        ...room.history.slice(1),
+      ]
+    : room.history
+
+  return updateStoredRoom(room, {
+    history: nextHistory,
+    result,
+    now,
+  })
 }
 
 const serializeRoomUpdatedEvent = (room: RoomState) =>

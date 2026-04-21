@@ -1,57 +1,33 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server"
-import { z } from "zod"
 
-import {
-  cardValueSchema,
-  castVoteState,
-  changeRoleState,
-  joinRoomState,
-  leaveRoomState,
-  rerollRoomState,
-  resetRoomState,
-  revealRoomState,
-  roomIdSchema,
-  roomMemberRoleSchema,
-  setRoomResultState,
-} from "#/lib/planning-poker"
 import { generateRoomId } from "#/lib/room-id"
 import { assertRoomCreateAllowed } from "#/lib/room-rate-limit.server"
-import { createRoom, getRoomSnapshot, mutateRoom, type RoomBackendConfig } from "#/lib/room.server"
-
-const createRoomInputSchema = z.object({})
-
-const roomIdInputSchema = z.object({
-  roomId: roomIdSchema,
-})
-
-const joinRoomInputSchema = z.object({
-  roomId: roomIdSchema,
-  memberId: z.string().uuid(),
-  name: z.string(),
-})
-
-const leaveRoomInputSchema = z.object({
-  roomId: roomIdSchema,
-  memberId: z.string().uuid(),
-})
-
-const changeRoleInputSchema = z.object({
-  roomId: roomIdSchema,
-  memberId: z.string().uuid(),
-  role: roomMemberRoleSchema,
-})
-
-const castVoteInputSchema = z.object({
-  roomId: roomIdSchema,
-  memberId: z.string().uuid(),
-  vote: cardValueSchema,
-})
-
-const setResultInputSchema = z.object({
-  roomId: roomIdSchema,
-  result: cardValueSchema,
-})
+import { revealRoomServerState } from "#/lib/room-reveal.server"
+import {
+  castVoteRequestSchema,
+  changeRoleRequestSchema,
+  createRoomRequestSchema,
+  joinRoomRequestSchema,
+  leaveRoomRequestSchema,
+  rerollRoomRequestSchema,
+  resetRoomRequestSchema,
+  roomSnapshotRequestSchema,
+  setRoomResultRequestSchema,
+} from "#/lib/room-sync"
+import {
+  castVoteServerState,
+  changeRoleServerState,
+  createRoom,
+  getRoomSnapshot,
+  joinRoomServerState,
+  leaveRoomServerState,
+  mutateRoom,
+  rerollRoomServerState,
+  resetRoomServerState,
+  setRoomResultServerState,
+  type RoomBackendConfig,
+} from "#/lib/room.server"
 
 const getRoomBackend = (): RoomBackendConfig => {
   if (process.env.ROOM_BACKEND === "memory") {
@@ -85,7 +61,7 @@ const getRoomBackend = (): RoomBackendConfig => {
 }
 
 export const createRoomFn = createServerFn({ method: "POST" })
-  .inputValidator(createRoomInputSchema)
+  .inputValidator(createRoomRequestSchema)
   .handler(async () => {
     assertRoomCreateAllowed(getRequest(), Date.now())
 
@@ -104,7 +80,7 @@ export const createRoomFn = createServerFn({ method: "POST" })
   })
 
 export const getRoomSnapshotFn = createServerFn({ method: "GET" })
-  .inputValidator(roomIdInputSchema)
+  .inputValidator(roomSnapshotRequestSchema)
   .handler(async ({ data }) => {
     setResponseHeader("Cache-Control", "no-store")
     const backend = getRoomBackend()
@@ -112,11 +88,11 @@ export const getRoomSnapshotFn = createServerFn({ method: "GET" })
   })
 
 export const joinRoom = createServerFn({ method: "POST" })
-  .inputValidator(joinRoomInputSchema)
+  .inputValidator(joinRoomRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      joinRoomState({
+      joinRoomServerState({
         room: currentRoom,
         memberId: data.memberId,
         name: data.name,
@@ -132,11 +108,11 @@ export const joinRoom = createServerFn({ method: "POST" })
   })
 
 export const leaveRoom = createServerFn({ method: "POST" })
-  .inputValidator(leaveRoomInputSchema)
+  .inputValidator(leaveRoomRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      leaveRoomState({
+      leaveRoomServerState({
         room: currentRoom,
         memberId: data.memberId,
         now: Date.now(),
@@ -151,11 +127,11 @@ export const leaveRoom = createServerFn({ method: "POST" })
   })
 
 export const changeRole = createServerFn({ method: "POST" })
-  .inputValidator(changeRoleInputSchema)
+  .inputValidator(changeRoleRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      changeRoleState({
+      changeRoleServerState({
         room: currentRoom,
         memberId: data.memberId,
         role: data.role,
@@ -171,11 +147,11 @@ export const changeRole = createServerFn({ method: "POST" })
   })
 
 export const castVote = createServerFn({ method: "POST" })
-  .inputValidator(castVoteInputSchema)
+  .inputValidator(castVoteRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      castVoteState({
+      castVoteServerState({
         room: currentRoom,
         memberId: data.memberId,
         vote: data.vote,
@@ -191,11 +167,11 @@ export const castVote = createServerFn({ method: "POST" })
   })
 
 export const revealVotes = createServerFn({ method: "POST" })
-  .inputValidator(roomIdInputSchema)
+  .inputValidator(roomSnapshotRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      revealRoomState({
+      revealRoomServerState({
         room: currentRoom,
         now: Date.now(),
       }),
@@ -209,11 +185,11 @@ export const revealVotes = createServerFn({ method: "POST" })
   })
 
 export const resetRound = createServerFn({ method: "POST" })
-  .inputValidator(roomIdInputSchema)
+  .inputValidator(resetRoomRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      resetRoomState({
+      resetRoomServerState({
         room: currentRoom,
         now: Date.now(),
       }),
@@ -227,11 +203,11 @@ export const resetRound = createServerFn({ method: "POST" })
   })
 
 export const rerollRound = createServerFn({ method: "POST" })
-  .inputValidator(roomIdInputSchema)
+  .inputValidator(rerollRoomRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      rerollRoomState({
+      rerollRoomServerState({
         room: currentRoom,
         now: Date.now(),
       }),
@@ -245,11 +221,11 @@ export const rerollRound = createServerFn({ method: "POST" })
   })
 
 export const setRoomResult = createServerFn({ method: "POST" })
-  .inputValidator(setResultInputSchema)
+  .inputValidator(setRoomResultRequestSchema)
   .handler(async ({ data }) => {
     const backend = getRoomBackend()
     const room = await mutateRoom(backend, data.roomId, (currentRoom) =>
-      setRoomResultState({
+      setRoomResultServerState({
         room: currentRoom,
         result: data.result,
         now: Date.now(),

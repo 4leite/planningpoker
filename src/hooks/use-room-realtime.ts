@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 import { roomUpdatedEventSchema, type RoomState } from "#/lib/planning-poker"
 import { roomQueryKey, roomQueryOptions } from "#/lib/room-query"
+import { reconcileRoomSnapshot } from "#/lib/room-sync"
 import { getRoomSnapshotFn } from "#/lib/room.functions"
 
 export const useRoomRealtime = ({
@@ -36,15 +37,10 @@ export const useRoomRealtime = ({
 
   const setRoom = (nextRoom: RoomState | null) => {
     queryClient.setQueryData(roomQueryKey(roomId), (currentRoom: RoomState | null | undefined) => {
-      if (!nextRoom) {
-        return null
-      }
-
-      if (!currentRoom || nextRoom.version >= currentRoom.version) {
-        return nextRoom
-      }
-
-      return currentRoom
+      return reconcileRoomSnapshot({
+        currentRoom,
+        nextRoom,
+      })
     })
   }
 
