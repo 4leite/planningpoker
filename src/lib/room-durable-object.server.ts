@@ -1,19 +1,7 @@
 import { DurableObject } from "cloudflare:workers"
 
-import {
-  createRoomState,
-  joinRoomState,
-  leaveRoomState,
-  revealRoomState,
-  rerollRoomState,
-  resetRoomState,
-  setRoomResultState,
-  changeRoleState,
-  castVoteState,
-  roomLifetimeMs,
-  roomStateSchema,
-  type RoomState,
-} from "#/lib/planning-poker"
+import { type RoomState } from "#/lib/planning-poker"
+import { createRoomAuthority } from "#/lib/room-authority"
 import {
   roomSocketActionSchema,
   roomSocketErrorMessageSchema,
@@ -25,6 +13,18 @@ const ROOM_STORAGE_KEY = "room"
 
 export class RoomDurableObject extends DurableObject {
   roomId = this.ctx.id.name ?? null
+
+  authority = createRoomAuthority({
+    storage: {
+      getRoom: () => this.ctx.storage.get(ROOM_STORAGE_KEY),
+      putRoom: (room) => this.ctx.storage.put(ROOM_STORAGE_KEY, room),
+      deleteRoom: async () => {
+        await this.ctx.storage.delete(ROOM_STORAGE_KEY)
+      },
+      setAlarm: (expiresAt) => this.ctx.storage.setAlarm(expiresAt),
+      deleteAlarm: () => this.ctx.storage.deleteAlarm(),
+    },
+  })
 
   async fetch(request: Request) {
     const url = new URL(request.url)
@@ -45,10 +45,7 @@ export class RoomDurableObject extends DurableObject {
   }
 
   async alarm() {
-    const room = await this.getActiveRoom(Date.now())
-    if (!room || room.expiresAt <= Date.now()) {
-      await this.deleteRoom()
-    }
+    await this.authority.getActiveRoom()
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
@@ -76,11 +73,6 @@ export class RoomDurableObject extends DurableObject {
   }
 
   async handleCreate(requestRoomId: string | null) {
-    const existingRoom = await this.getActiveRoom(Date.now())
-    if (existingRoom) {
-      return new Response(null, { status: 409 })
-    }
-
     const roomId = requestRoomId ?? this.roomId
     if (!roomId) {
       return new Response(null, { status: 500 })
@@ -88,9 +80,10 @@ export class RoomDurableObject extends DurableObject {
 
     this.roomId = roomId
 
-    const now = Date.now()
-    const room = createRoomState({ roomId, now })
-    await this.putRoom(room)
+    const room = await this.authority.createRoom(roomId)
+    if (!room) {
+      return new Response(null, { status: 409 })
+    }
 
     return Response.json({ roomId: room.roomId }, { status: 201 })
   }
@@ -106,7 +99,7 @@ export class RoomDurableObject extends DurableObject {
 
     this.ctx.acceptWebSocket(server)
 
-    const room = await this.getActiveRoom(Date.now())
+    const room = await this.authority.getActiveRoom()
     this.sendSnapshot(server, room)
 
     return new Response(null, {
@@ -119,101 +112,7 @@ export class RoomDurableObject extends DurableObject {
   }
 
   async applyAction(action: RoomSocketAction) {
-    const now = Date.now()
-    const room = await this.getActiveRoom(now)
-    if (!room) {
-      throw new Error("room_not_found")
-    }
-
-    const nextRoom = this.mutateRoom(room, action, now)
-    const roomWithLifecycle = this.withLifecycleUpdate(room, nextRoom, action, now)
-
-    await this.putRoom(roomWithLifecycle)
-    return roomWithLifecycle
-  }
-
-  mutateRoom(room: RoomState, action: RoomSocketAction, now: number) {
-    switch (action.type) {
-      case "room.join":
-        return joinRoomState({
-          room,
-          memberId: action.memberId,
-          name: action.name,
-          now,
-        })
-      case "room.leave":
-        return leaveRoomState({
-          room,
-          memberId: action.memberId,
-          now,
-        })
-      case "room.changeRole":
-        return changeRoleState({
-          room,
-          memberId: action.memberId,
-          role: action.role,
-          now,
-        })
-      case "room.castVote":
-        return castVoteState({
-          room,
-          memberId: action.memberId,
-          vote: action.vote,
-          now,
-        })
-      case "room.reveal":
-        return revealRoomState({ room, now })
-      case "room.reset":
-        return resetRoomState({ room, now })
-      case "room.reroll":
-        return rerollRoomState({ room, now })
-      case "room.setResult":
-        return setRoomResultState({
-          room,
-          result: action.result,
-          now,
-        })
-    }
-  }
-
-  withLifecycleUpdate(room: RoomState, nextRoom: RoomState, action: RoomSocketAction, now: number) {
-    if (nextRoom.version === room.version) {
-      return nextRoom
-    }
-
-    if (action.type !== "room.reset" && action.type !== "room.setResult") {
-      return nextRoom
-    }
-
-    return {
-      ...nextRoom,
-      expiresAt: now + roomLifetimeMs,
-    }
-  }
-
-  async getActiveRoom(now: number) {
-    const storedRoom = await this.ctx.storage.get(ROOM_STORAGE_KEY)
-    const room = roomStateSchema.nullable().parse(storedRoom ?? null)
-    if (!room) {
-      return null
-    }
-
-    if (room.expiresAt > now) {
-      return room
-    }
-
-    await this.deleteRoom()
-    return null
-  }
-
-  async putRoom(room: RoomState) {
-    await this.ctx.storage.put(ROOM_STORAGE_KEY, room)
-    await this.ctx.storage.setAlarm(room.expiresAt)
-  }
-
-  async deleteRoom() {
-    await this.ctx.storage.delete(ROOM_STORAGE_KEY)
-    await this.ctx.storage.deleteAlarm()
+    return this.authority.applyAction(action)
   }
 
   sendSnapshot(ws: WebSocket, room: RoomState | null, mutationId?: string) {
