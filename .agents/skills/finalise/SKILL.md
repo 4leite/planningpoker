@@ -2,8 +2,8 @@
 name: finalise
 description:
   "Finalise completed work into a PR from fresh main. Use when the user says finalise/finalize.
-  Handles syncing main, creating a new branch from main, including all current work, ensuring
-  changeset coverage, committing, pushing, and opening a PR against main."
+  Handles syncing main, creating a new branch from main, including all current work, committing,
+  pushing, and opening a PR against main."
 argument-hint: What work should be finalised?
 ---
 
@@ -29,17 +29,15 @@ This skill does not run validations, whether they are required is not a concern 
 2. Derive work metadata
    - Follow [METADATA](../../METADATA.md).
    - Keep branch/commit/PR wording concise and focused on completed work outcomes.
-3. Ensure release metadata
-   - Add a [changeset](https://github.com/changesets/changesets) for any package changes.
-4. Fetch origin
+3. Fetch origin
    - Ensure we have all remote changes in this branch and main.
    - This should happen before creating the final branch.
-5. Create fresh final branch
+4. Create fresh final branch
    - Work in the current checkout, not a separate worktree.
    - Create a new branch from latest `origin/main` in the current checkout.
    - Branch name format: `finalise/<timestamp>-<work-slug>`
    - `work-slug` should reflect the work area and outcome.
-6. Integrate source branch work
+5. Integrate source branch work
    - The intent is to package all current work into the fresh final branch, not to preserve the
      pre-finalise branch state.
    - Carry over the full current work state, including uncommitted changes, onto the fresh final
@@ -55,23 +53,23 @@ This skill does not run validations, whether they are required is not a concern 
      branch from `origin/main`, restore that tree state, and then create one commit on the fresh
      final branch.
    - Create one commit representing the net-new logical work.
-7. Commit and push
+6. Commit and push
    - Stage all changes included in the current work state.
    - Commit with a concise summary of completed work (not finalisation mechanics).
    - Push branch to origin
-8. Open PR against main
+7. Open PR against main
    - Create PR targeting `main`.
    - Title and description must describe completed work outcomes, not workflow steps.
 
 ## Decision Points
 
 - Do not run extra validations inside this skill, but do not assume correctness either
+- If validation status is already known from earlier work, report it accurately; do not imply that
+  finalise reran checks unless it actually did
 - Always generate concise work-focused metadata via [METADATA](../../METADATA.md); do not ask for
   wording.
-- Missing changeset: add/update changeset before committing.
 - If the current work state is empty relative to `origin/main`, stop and report no changes to
   finalise.
-- If package changes exist without a changeset, add a changeset.
 - Do not create or use a temporary worktree.
 - Do not use `git merge --squash` during finalise.
 - Do not create intermediate source-branch commits purely as transport for the final branch.
@@ -88,7 +86,6 @@ This skill does not run validations, whether they are required is not a concern 
 - All current work is included by content
 - Final branch commit history reflects net-new logical work only
 - Finalise ran in the current checkout without creating a separate worktree
-- Required changeset exists
 - Commit is created and pushed
 - PR is open against `main`
 - Branch name, commit summary, PR title, and PR body describe completed work outcomes (not workflow
@@ -100,4 +97,5 @@ This skill does not run validations, whether they are required is not a concern 
 - Commit SHA
 - PR URL
 - Derived work summary used for branch/PR metadata
+- Validation status if known
 - Any blockers or manual follow-up steps
