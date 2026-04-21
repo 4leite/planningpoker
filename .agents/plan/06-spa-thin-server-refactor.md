@@ -403,7 +403,7 @@ This should still be treated as a rewrite of the room sync model, but not a tran
 
 Status as of 2026-04-21:
 
-- Phase 1: mostly complete
+- Phase 1: complete
 - Phase 2: complete
 - Phase 3: complete
 - Phase 4: complete
