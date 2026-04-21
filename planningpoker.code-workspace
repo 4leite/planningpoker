@@ -31,6 +31,7 @@
     },
     "chat.useNestedAgentsMdFiles": true,
     "chat.tools.terminal.autoApprove": {
+      "pnpm exec playwright": true,
       "set": true,
       "break": true,
       "curl": true,

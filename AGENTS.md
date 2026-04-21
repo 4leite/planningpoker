@@ -49,6 +49,13 @@ grep -E 'execution-model|server-functions|server-routes'
 - The current blank scaffold includes starter marketing UI and an `about` route; replace those
   deliberately rather than layering new product UI on top of them by accident.
 - `.vercel/` contains local Vercel project metadata and may need relinking per environment.
+- Prefer `pnpm test:playwright <specs-or-flags>` for targeted browser coverage; use the `test:e2e:*`
+  scripts for the canned suites.
+- `playwright.config.ts` starts a fresh app container with `pnpm docker:down && pnpm docker:up` and
+  `reuseExistingServer: false`; do not rely on an already-running server on port 3000.
+- If Playwright startup fails because of stale repo test infra or a port-3000 conflict, clear the
+  repo container with `pnpm docker:down` and rerun.
+- For branch names, commit summaries, PR titles, and PR bodies, follow `.agents/METADATA.md`.
 
 - CRITICAL: Try to map your task to `pnpm validate` including: lint, check types, build or run tests
 
