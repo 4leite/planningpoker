@@ -152,12 +152,12 @@ model.
 
 ### Acceptance criteria
 
-- [ ] The local Worker implementation can be deployed to Cloudflare with the required bindings and
+- [x] The local Worker implementation can be deployed to Cloudflare with the required bindings and
       migrations.
-- [ ] Static asset routing and Worker execution are configured correctly for the deployed app.
-- [ ] Production environment configuration is documented and reproducible.
+- [x] Static asset routing and Worker execution are configured correctly for the deployed app.
+- [x] Production environment configuration is documented and reproducible.
 - [ ] Turnstile-gated create flow is added here if still required.
-- [ ] Deployment-specific validation passes without changing the local development architecture.
+- [x] Deployment-specific validation passes without changing the local development architecture.
 
 ### Green-green validation
 
