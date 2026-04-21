@@ -28,10 +28,10 @@ writing new tests to debugging and maintaining existing test suites.
 - In this repo, prefer `pnpm test:playwright <specs...> [flags]` for targeted Playwright runs.
 - Use `pnpm test:e2e:smoke` for the canned smoke suite and `pnpm validate` for the broader repo
   gate.
-- `playwright.config.ts` starts a fresh app container with `pnpm docker:down && pnpm docker:up` and
+- `playwright.config.ts` starts a fresh preview server with `pnpm preview:e2e` and
   `reuseExistingServer: false`.
 - Do not assume an already-running server on port 3000 will be reused.
-- If stale repo test infra or a port-3000 conflict blocks startup, run `pnpm docker:down` and rerun.
+- If a stale preview process or a port-3000 conflict blocks startup, stop the process and rerun.
 
 ## Activity-Based Reference Guide
 

@@ -7,7 +7,7 @@
 - UI primitives: prefer `@tohuhono/ui`; local `shadcn` is configured for Base UI with
   `components.json` when a primitive is not available there
 - Devtools: `@tanstack/devtools-vite`, `@tanstack/react-devtools`, `@tanstack/react-router-devtools`
-- Deployment target: Vercel via Nitro
+- Deployment target: Cloudflare Workers via Wrangler
 
 - CRITICAL: Read [CODESTYLE](.agents/CODESTYLE.md) before writing any code
 
@@ -52,12 +52,11 @@ skills:
   equivalents.
 - The current blank scaffold includes starter marketing UI and an `about` route; replace those
   deliberately rather than layering new product UI on top of them by accident.
-- `.vercel/` contains local Vercel project metadata and may need relinking per environment.
 - Prefer `pnpm test:playwright <specs-or-flags>` for targeted browser coverage; use the `test:e2e:*`
   scripts for the canned suites.
-- `playwright.config.ts` starts a fresh app container with `pnpm docker:down && pnpm docker:up`
-- If Playwright startup fails because of stale repo test infra or a port-3000 conflict, clear the
-  repo container with `pnpm docker:down` and rerun.
+- `playwright.config.ts` starts a fresh Worker preview server with `pnpm preview:e2e`
+- If Playwright startup fails because port `3000` is already in use, stop the stale preview process
+  and rerun.
 - For branch names, commit summaries, PR titles, and PR bodies, follow `.agents/METADATA.md`.
 
 - CRITICAL: Try to map your task to `pnpm validate` including: lint, check types, build or run tests
@@ -67,4 +66,3 @@ skills:
 - [coding style rules and guidelines](.agents/CODESTYLE.md)
 - [git and github metadata](.agents/METADATA.md)
 - [build and deploy](.agents/DEPLOYMENT.md)
-- [redis data model](.agents/REDIS_DATA_MODEL.md)
