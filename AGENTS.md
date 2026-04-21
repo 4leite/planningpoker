@@ -51,8 +51,7 @@ grep -E 'execution-model|server-functions|server-routes'
 - `.vercel/` contains local Vercel project metadata and may need relinking per environment.
 - Prefer `pnpm test:playwright <specs-or-flags>` for targeted browser coverage; use the `test:e2e:*`
   scripts for the canned suites.
-- `playwright.config.ts` starts a fresh app container with `pnpm docker:down && pnpm docker:up` and
-  `reuseExistingServer: false`; do not rely on an already-running server on port 3000.
+- `playwright.config.ts` starts a fresh app container with `pnpm docker:down && pnpm docker:up`
 - If Playwright startup fails because of stale repo test infra or a port-3000 conflict, clear the
   repo container with `pnpm docker:down` and rerun.
 - For branch names, commit summaries, PR titles, and PR bodies, follow `.agents/METADATA.md`.

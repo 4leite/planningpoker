@@ -29,7 +29,7 @@
     "docker:start": "podman run --replace --rm --name planning-poker-e2e --userns keep-id -p 3000:3000 --mount type=tmpfs,destination=/data localhost/planningpoker-e2e:latest",
     "docker:up": "pnpm docker:build && pnpm docker:start",
     "docker:down": "podman rm -f planning-poker-e2e || true",
-    "docker:log": "podman logs -f --tail 100 planning-poker-e2e"
+    "docker:log": "podman logs -f  --tail 100 planning-poker-e2e"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
