@@ -2,6 +2,8 @@ import { type MemberSession, expect, test } from "./fixtures/room"
 import {
   acceptRound,
   castVote,
+  createRoom,
+  joinRoom,
   overrideResult,
   revealVotes,
   rerollRound,
@@ -12,8 +14,45 @@ import {
   roomResultInput,
   roomSeat,
   seatStatus,
+  voteButton,
   voteProgress,
 } from "./support/room-selectors"
+
+const delayRoomSocketActions = async ({
+  page,
+  actionTypes,
+  delayMs,
+}: {
+  page: Parameters<typeof voteButton>[0]
+  actionTypes: string[]
+  delayMs: number
+}) => {
+  await page.addInitScript(
+    ({ nextActionTypes, nextDelayMs }) => {
+      const delayedTypes = new Set(nextActionTypes)
+      const originalSend = WebSocket.prototype.send
+
+      WebSocket.prototype.send = function patchedSend(data) {
+        if (typeof data === "string") {
+          try {
+            const parsed = JSON.parse(data) as { type?: string }
+            if (parsed.type && delayedTypes.has(parsed.type)) {
+              window.setTimeout(() => {
+                Reflect.apply(originalSend, this, [data])
+              }, nextDelayMs)
+              return
+            }
+          } catch {
+            // Fall through to the native send when payload parsing fails.
+          }
+        }
+
+        return Reflect.apply(originalSend, this, [data])
+      }
+    },
+    { nextActionTypes: actionTypes, nextDelayMs: delayMs },
+  )
+}
 
 const setupTwoMembers = async (
   createRoomWithCreator: (
@@ -31,6 +70,42 @@ const setupTwoMembers = async (
 }
 
 test.describe("Room voting", () => {
+  test("participants can change votes while earlier vote requests are still pending @realtime", async ({
+    page,
+  }) => {
+    await delayRoomSocketActions({
+      page,
+      actionTypes: ["room.castVote"],
+      delayMs: 400,
+    })
+
+    await createRoom(page)
+    await joinRoom(page, "Alice")
+
+    await voteButton(page, "3").click()
+    await expect(voteButton(page, "5")).toBeEnabled()
+
+    await voteButton(page, "5").click()
+    await expect(voteButton(page, "8")).toBeEnabled()
+
+    await voteButton(page, "8").click()
+    await expect(voteButton(page, "8")).toHaveAttribute("aria-pressed", "true")
+  })
+
+  test("reveal disables itself while the reveal request is pending @realtime", async ({ page }) => {
+    await delayRoomSocketActions({
+      page,
+      actionTypes: ["room.reveal"],
+      delayMs: 400,
+    })
+
+    await createRoom(page)
+    await joinRoom(page, "Alice")
+
+    await revealButton(page).click()
+    await expect(revealButton(page)).toBeDisabled()
+  })
+
   test("votes stay hidden until reveal and update other clients live @smoke @realtime", async ({
     createRoomWithCreator,
     openMember,
