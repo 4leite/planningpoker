@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      worker_name:
+        required: false
+        default: ""
+        type: string
+      workers_dev_subdomain:
+        required: false
+        default: ""
+        type: string
+    outputs:
+      url:
+        description: The deployed worker URL when one is known
+        value: ${{ jobs.deploy.outputs.url }}
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      CLOUDFLARE_API_TOKEN:
+        required: true
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment }}
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Corepack
+        run: corepack enable pnpm
+      - name: Enable pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+      - name: Install
+        run: pnpm i
+      - name: Deploy Worker
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm build
+
+          deploy_args=()
+          if [[ -n "${{ inputs.worker_name }}" ]]; then
+            deploy_args+=(--name "${{ inputs.worker_name }}")
+          fi
+
+          pnpm wrangler deploy "${deploy_args[@]}"
+
+          if [[ -n "${{ inputs.worker_name }}" && -n "${{ inputs.workers_dev_subdomain }}" ]]; then
+            url="https://${{ inputs.worker_name }}.${{ inputs.workers_dev_subdomain }}.workers.dev"
+            echo "url=${url}" >> "$GITHUB_OUTPUT"
+            echo "Deployed preview URL: ${url}" >> "$GITHUB_STEP_SUMMARY"
+          fi

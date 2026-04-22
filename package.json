@@ -7,9 +7,11 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "check": "pnpm format:check && pnpm lint:check && pnpm tsc && pnpm test",
     "build": "vite build",
     "typegen": "wrangler types",
-    "deploy": "wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
+    "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --fix .",
@@ -25,7 +27,7 @@
     "test:e2e:headed": "playwright test --headed --grep-invert @manual",
     "test:e2e:smoke": "playwright test --grep @smoke --grep-invert '@manual|@stress'",
     "test:e2e:stress": "playwright test --grep @stress --grep-invert @manual",
-    "validate": "pnpm lint:check && pnpm tsc && pnpm test && pnpm test:e2e:smoke && pnpm format:check",
+    "validate": "pnpm check && pnpm test:e2e",
     "wrangler": "wrangler"
   },
   "dependencies": {
