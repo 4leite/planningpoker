@@ -15,4 +15,5 @@ todos.json
 .tmp
 .vercel
 test/results
+test/playwright-report
 .env*.local

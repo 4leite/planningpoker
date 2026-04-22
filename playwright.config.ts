@@ -1,21 +1,36 @@
 import { defineConfig } from "@playwright/test"
 
+const remoteBaseUrl = process.env.PLAYWRIGHT_BASE_URL
+const baseURL = remoteBaseUrl ?? "http://127.0.0.1:3000"
+const accessClientId = process.env.CLOUDFLARE_ACCESS_CLIENT_ID
+const accessClientSecret = process.env.CLOUDFLARE_ACCESS_CLIENT_SECRET
+const extraHTTPHeaders =
+  accessClientId && accessClientSecret
+    ? {
+        "CF-Access-Client-Id": accessClientId,
+        "CF-Access-Client-Secret": accessClientSecret,
+      }
+    : undefined
+
 export default defineConfig({
   testDir: "./test/e2e",
   outputDir: "./test/results",
   timeout: 120_000,
-  reporter: "list",
+  reporter: [["list"], ["html", { open: "never", outputFolder: "test/playwright-report" }]],
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL,
+    extraHTTPHeaders,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: "pnpm docker:down && pnpm docker:up",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: true,
-    timeout: 900_000,
-    stdout: "pipe",
-    stderr: "pipe",
-  },
+  webServer: remoteBaseUrl
+    ? undefined
+    : {
+        command: "pnpm preview:e2e",
+        url: baseURL,
+        reuseExistingServer: false,
+        timeout: 900_000,
+        stdout: "pipe",
+        stderr: "pipe",
+      },
 })

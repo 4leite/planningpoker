@@ -1,6 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { useServerFn } from "@tanstack/react-start"
 import { Button, buttonVariants } from "@tohuhono/ui/button"
 import { Input } from "@tohuhono/ui/input"
 import { cn } from "@tohuhono/utils"
@@ -8,37 +6,24 @@ import { maxLength } from "human-id"
 import { useState } from "react"
 
 import { roomIdSchema } from "#/lib/planning-poker"
-import { createRoomFn } from "#/lib/room.functions"
 
-export const HomeScreen = () => {
+export const HomeScreen = ({
+  initialErrorMessage = null,
+}: {
+  initialErrorMessage?: string | null
+}) => {
   const navigate = useNavigate()
-  const createRoomServerFn = useServerFn(createRoomFn)
   const [joinRoomId, setJoinRoomId] = useState("")
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const createRoomMutation = useMutation({
-    mutationFn: () =>
-      createRoomServerFn({
-        data: {},
-      }),
-    onSuccess: ({ roomId }) => {
-      void navigate({
-        to: "/r/$room",
-        params: { room: roomId },
-      })
-    },
-    onError: (error) => {
-      setErrorMessage(
-        error instanceof Error ? error.message : "We could not open a room right now.",
-      )
-    },
-  })
-
-  const handleCreateRoom = () => {
-    setErrorMessage(null)
-    createRoomMutation.mutate()
-  }
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialErrorMessage)
 
   const handleJoinRoom = (event: React.FormEvent<HTMLFormElement>) => {
+    const submitter = "submitter" in event.nativeEvent ? event.nativeEvent.submitter : null
+
+    if (submitter instanceof HTMLButtonElement && submitter.value === "create") {
+      setErrorMessage(null)
+      return
+    }
+
     event.preventDefault()
     const normalizedRoomId = joinRoomId.trim().toLocaleLowerCase()
 
@@ -59,10 +44,12 @@ export const HomeScreen = () => {
   return (
     <form className="flex w-md flex-col gap-4" onSubmit={handleJoinRoom}>
       <Button
-        type="button"
+        type="submit"
+        name="action"
+        value="create"
+        formAction="/api/rooms/create"
+        formMethod="post"
         className="w-full"
-        disabled={createRoomMutation.isPending}
-        onClick={handleCreateRoom}
       >
         Create New Table
       </Button>
@@ -89,8 +76,10 @@ export const HomeScreen = () => {
 
         <Button
           type={"submit"}
+          name="action"
+          value="join"
           variant="secondary"
-          disabled={createRoomMutation.isPending || !hasJoinRoomId}
+          disabled={!hasJoinRoomId}
           className={cn("h-full w-auto")}
         >
           Join
