@@ -41,6 +41,12 @@ The test should protect against regressions in _our_ logic, not verify library b
 ## Playwright runtime
 
 - `playwright.config.ts` boots a fresh preview server with `pnpm preview:e2e`.
+- When `PLAYWRIGHT_BASE_URL` is set, Playwright targets that deployed environment instead of
+  starting a local preview server.
+- CI preview smoke runs now target the PR-specific deployed Worker URL returned by the deploy
+  workflow.
+- Protected preview smoke runs can send Cloudflare Access service-token headers by setting
+  `CLOUDFLARE_ACCESS_CLIENT_ID` and `CLOUDFLARE_ACCESS_CLIENT_SECRET`.
 - If targeted Playwright runs fail because of a stale preview process or a port conflict, stop the
   process using port `3000` and retry.
 - Prefer targeted specs or grep filters during development instead of defaulting to the entire e2e
