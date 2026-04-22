@@ -15,7 +15,7 @@
 - Production deploys attach the hostname configured in the `CLOUDFLARE_PRODUCTION_BASE_URL`
   repository variable.
 - Preview deploys attach exact per-PR hostnames under the `CLOUDFLARE_PREVIEW_BASE_DOMAIN`
-  repository variable, such as `pr-123.jpp.dev.ehmdash.com`.
+  repository variable, such as `jpp-pr-123.dev.ehmdash.com`.
 - Preview smoke tests run against the deployed PR URL emitted by the deploy workflow.
 - Closed pull requests delete their preview Worker via `.github/workflows/preview-cleanup.yml`.
 - Preview custom-domain cleanup is currently manual if Cloudflare leaves a hostname binding behind
