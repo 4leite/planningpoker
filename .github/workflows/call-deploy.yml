@@ -6,11 +6,19 @@ on:
       environment:
         required: true
         type: string
+      production_base_url:
+        required: false
+        default: ""
+        type: string
+      preview_base_domain:
+        required: false
+        default: ""
+        type: string
       worker_name:
         required: false
         default: ""
         type: string
-      workers_dev_subdomain:
+      preview_hostname_label:
         required: false
         default: ""
         type: string
@@ -61,6 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           pnpm build
 
           deploy_args=()
@@ -68,10 +77,26 @@ jobs:
             deploy_args+=(--name "${{ inputs.worker_name }}")
           fi
 
+          deployed_url=""
+
+          if [[ "${{ inputs.environment }}" == "production" && -n "${{ inputs.production_base_url }}" ]]; then
+            production_hostname="${{ inputs.production_base_url }}"
+            production_hostname="${production_hostname#https://}"
+            production_hostname="${production_hostname#http://}"
+            production_hostname="${production_hostname%%/*}"
+            deploy_args+=(--domain "$production_hostname")
+            deployed_url="https://$production_hostname"
+          fi
+
+          if [[ "${{ inputs.environment }}" == "preview" && -n "${{ inputs.preview_hostname_label }}" && -n "${{ inputs.preview_base_domain }}" ]]; then
+            preview_hostname="${{ inputs.preview_hostname_label }}.${{ inputs.preview_base_domain }}"
+            deploy_args+=(--domain "$preview_hostname")
+            deployed_url="https://$preview_hostname"
+          fi
+
           pnpm wrangler deploy "${deploy_args[@]}"
 
-          if [[ -n "${{ inputs.worker_name }}" && -n "${{ inputs.workers_dev_subdomain }}" ]]; then
-            url="https://${{ inputs.worker_name }}.${{ inputs.workers_dev_subdomain }}.workers.dev"
-            echo "url=${url}" >> "$GITHUB_OUTPUT"
-            echo "Deployed preview URL: ${url}" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -n "$deployed_url" ]]; then
+            echo "url=${deployed_url}" >> "$GITHUB_OUTPUT"
+            echo "Deployed URL: ${deployed_url}" >> "$GITHUB_STEP_SUMMARY"
           fi
