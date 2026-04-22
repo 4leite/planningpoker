@@ -7,6 +7,7 @@ const landingPageCacheControl = "public, max-age=0, s-maxage=86400, stale-while-
 
 export const Route = createFileRoute("/")({
   validateSearch: z.object({
+    createError: z.string().optional(),
     room: z.string().optional(),
   }),
   headers: () => ({
@@ -24,5 +25,9 @@ export const Route = createFileRoute("/")({
 })
 
 function App() {
-  return <HomeScreen />
+  const { createError } = Route.useSearch()
+
+  return (
+    <HomeScreen initialErrorMessage={createError ? "We could not open a room right now." : null} />
+  )
 }
