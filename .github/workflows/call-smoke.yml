@@ -1,0 +1,53 @@
+name: Smoke Tests
+
+on:
+  workflow_call:
+    inputs:
+      base_url:
+        required: true
+        type: string
+    secrets:
+      CLOUDFLARE_ACCESS_CLIENT_ID:
+        required: false
+      CLOUDFLARE_ACCESS_CLIENT_SECRET:
+        required: false
+
+jobs:
+  smoke:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Corepack
+        run: corepack enable pnpm
+      - name: Enable pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm i
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run Smoke (deployed)
+        run: pnpm test:e2e:smoke
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+          CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+          CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
+      - name: Upload Playwright smoke artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          if-no-files-found: ignore
+          path: |
+            test/playwright-report/**
+            test/results/**
