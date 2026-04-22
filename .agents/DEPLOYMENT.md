@@ -14,12 +14,16 @@
   requests do not clobber each other.
 - Production deploys attach the hostname configured in the `CLOUDFLARE_PRODUCTION_BASE_URL`
   repository variable.
-- Preview deploys attach exact per-PR hostnames under the `CLOUDFLARE_PREVIEW_BASE_DOMAIN`
-  repository variable, such as `jpp-pr-123.dev.ehmdash.com`.
+- Preview deploys use each PR Worker's built-in `workers.dev` hostname, such as
+  `planningpoker-pr-123.<account-subdomain>.workers.dev`, to avoid per-hostname certificate
+  provisioning delays.
+- Cloudflare Workers Custom Domains do not support wildcard hostnames, so per-PR custom preview
+  hostnames add certificate issuance latency with little benefit here.
+- Preview smoke tests still wait for the deployed HTTPS endpoint to become reachable before running
+  Playwright, but the `workers.dev` target should be available much faster than a newly attached
+  custom hostname.
 - Preview smoke tests run against the deployed PR URL emitted by the deploy workflow.
 - Closed pull requests delete their preview Worker via `.github/workflows/preview-cleanup.yml`.
-- Preview custom-domain cleanup is currently manual if Cloudflare leaves a hostname binding behind
-  after Worker deletion.
 - The production GitHub workflow performs a direct deploy to the stable production Worker, then can
   smoke the stable production URL.
 - Protected smoke tests use Cloudflare Access service-token headers via

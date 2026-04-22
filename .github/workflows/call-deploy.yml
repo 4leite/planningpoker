@@ -10,15 +10,7 @@ on:
         required: false
         default: ""
         type: string
-      preview_base_domain:
-        required: false
-        default: ""
-        type: string
       worker_name:
-        required: false
-        default: ""
-        type: string
-      preview_hostname_label:
         required: false
         default: ""
         type: string
@@ -88,13 +80,17 @@ jobs:
             deployed_url="https://$production_hostname"
           fi
 
-          if [[ "${{ inputs.environment }}" == "preview" && -n "${{ inputs.preview_hostname_label }}" && -n "${{ inputs.preview_base_domain }}" ]]; then
-            preview_hostname="${{ inputs.preview_hostname_label }}.${{ inputs.preview_base_domain }}"
-            deploy_args+=(--domain "$preview_hostname")
-            deployed_url="https://$preview_hostname"
-          fi
-
           pnpm wrangler deploy "${deploy_args[@]}"
+
+          if [[ "${{ inputs.environment }}" == "preview" && -n "${{ inputs.worker_name }}" ]]; then
+            workers_subdomain="$({
+              curl --silent --show-error --fail \
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                --header "Content-Type: application/json" \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+            } | node -e 'let body="";process.stdin.setEncoding("utf8");process.stdin.on("data",(chunk)=>body+=chunk);process.stdin.on("end",()=>{const payload=JSON.parse(body);if(!payload?.success||!payload?.result?.subdomain){process.exit(1)}process.stdout.write(`${payload.result.subdomain}.workers.dev`)})')"
+            deployed_url="https://${{ inputs.worker_name }}.${workers_subdomain}"
+          fi
 
           if [[ -n "$deployed_url" ]]; then
             echo "url=${deployed_url}" >> "$GITHUB_OUTPUT"
