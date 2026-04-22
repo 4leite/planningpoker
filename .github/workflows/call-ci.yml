@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      preview_worker_name:
+        required: false
+        default: ""
+        type: string
+      preview_workers_dev_subdomain:
+        required: false
+        default: ""
+        type: string
+      production_base_url:
+        required: false
+        type: string
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCESS_CLIENT_ID:
+        required: false
+      CLOUDFLARE_ACCESS_CLIENT_SECRET:
+        required: false
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Corepack
+        run: corepack enable pnpm
+      - name: Enable pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+      - name: Install
+        run: pnpm i
+      - name: Check
+        run: pnpm check
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          package-manager-cache: false
+      - name: Corepack
+        run: corepack enable pnpm
+      - name: Enable pnpm cache
+        uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+      - name: Install
+        run: pnpm i
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E Tests
+        run: pnpm test:e2e
+      - name: Upload Playwright artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-report
+          if-no-files-found: ignore
+          path: |
+            test/playwright-report/**
+            test/results/**
+
+  deploy-preview:
+    name: Deploy Preview
+    if: ${{ inputs.environment == 'preview' }}
+    needs: [validate, e2e]
+    uses: ./.github/workflows/call-deploy.yml
+    with:
+      environment: preview
+      worker_name: ${{ inputs.preview_worker_name }}
+      workers_dev_subdomain: ${{ inputs.preview_workers_dev_subdomain }}
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  smoke:
+    name: Smoke Test
+    needs: [deploy-preview]
+    if: ${{ inputs.environment == 'preview' }}
+    uses: ./.github/workflows/call-smoke.yml
+    with:
+      base_url: ${{ needs.deploy-preview.outputs.url }}
+    secrets:
+      CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+      CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
+
+  deploy-production:
+    name: Deploy Production
+    if: ${{ inputs.environment == 'production' }}
+    needs: [validate, e2e]
+    uses: ./.github/workflows/call-deploy.yml
+    with:
+      environment: production
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  smoke-production:
+    name: Smoke Test Production
+    needs: [deploy-production]
+    if: ${{ inputs.environment == 'production' && inputs.production_base_url != '' }}
+    uses: ./.github/workflows/call-smoke.yml
+    with:
+      base_url: ${{ inputs.production_base_url }}
+    secrets:
+      CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+      CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
