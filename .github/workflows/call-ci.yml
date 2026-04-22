@@ -6,16 +6,13 @@ on:
       environment:
         required: true
         type: string
+      production_base_url:
+        required: false
+        default: ""
+        type: string
       preview_worker_name:
         required: false
         default: ""
-        type: string
-      preview_workers_dev_subdomain:
-        required: false
-        default: ""
-        type: string
-      production_base_url:
-        required: false
         type: string
     secrets:
       CLOUDFLARE_ACCOUNT_ID:
@@ -95,7 +92,6 @@ jobs:
     with:
       environment: preview
       worker_name: ${{ inputs.preview_worker_name }}
-      workers_dev_subdomain: ${{ inputs.preview_workers_dev_subdomain }}
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -118,6 +114,7 @@ jobs:
     uses: ./.github/workflows/call-deploy.yml
     with:
       environment: production
+      production_base_url: ${{ inputs.production_base_url }}
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

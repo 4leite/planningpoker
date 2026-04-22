@@ -12,9 +12,17 @@
 - Keep `tanstackStart()` before `viteReact()` in the Vite plugin array.
 - This Worker uses one isolated preview Worker per PR, named `planningpoker-pr-<number>`, so pull
   requests do not clobber each other.
+- Production deploys attach the hostname configured in the `CLOUDFLARE_PRODUCTION_BASE_URL`
+  repository variable.
+- Preview deploys use each PR Worker's built-in `workers.dev` hostname, such as
+  `planningpoker-pr-123.<account-subdomain>.workers.dev`, to avoid per-hostname certificate
+  provisioning delays.
+- Cloudflare Workers Custom Domains do not support wildcard hostnames, so per-PR custom preview
+  hostnames add certificate issuance latency with little benefit here.
+- Preview smoke tests still wait for the deployed HTTPS endpoint to become reachable before running
+  Playwright, but the `workers.dev` target should be available much faster than a newly attached
+  custom hostname.
 - Preview smoke tests run against the deployed PR URL emitted by the deploy workflow.
-- Preview URLs are constructed from the deployed worker name plus the
-  `CLOUDFLARE_WORKERS_DEV_SUBDOMAIN` repository variable.
 - Closed pull requests delete their preview Worker via `.github/workflows/preview-cleanup.yml`.
 - The production GitHub workflow performs a direct deploy to the stable production Worker, then can
   smoke the stable production URL.

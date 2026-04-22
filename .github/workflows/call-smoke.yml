@@ -36,6 +36,52 @@ jobs:
         run: pnpm i
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
+      - name: Wait for deployed URL
+        shell: bash
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+          CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p .tmp
+
+          curl_args=(
+            --silent
+            --show-error
+            --output /dev/null
+            --write-out '%{http_code}'
+            --head
+            --location
+            --connect-timeout 5
+            --max-time 15
+          )
+
+          if [[ -n "$CLOUDFLARE_ACCESS_CLIENT_ID" && -n "$CLOUDFLARE_ACCESS_CLIENT_SECRET" ]]; then
+            curl_args+=(
+              --header "CF-Access-Client-Id: $CLOUDFLARE_ACCESS_CLIENT_ID"
+              --header "CF-Access-Client-Secret: $CLOUDFLARE_ACCESS_CLIENT_SECRET"
+            )
+          fi
+
+          for attempt in {1..30}; do
+            status_code="$(curl "${curl_args[@]}" "$BASE_URL" 2> .tmp/smoke-readiness.log || true)"
+
+            if [[ "$status_code" =~ ^(200|301|302|303|307|308|401|403)$ ]]; then
+              echo "Smoke target ready at $BASE_URL (HTTP $status_code)"
+              exit 0
+            fi
+
+            echo "Attempt $attempt/30: $BASE_URL not ready yet (status: ${status_code:-curl-error})"
+            if [[ -s .tmp/smoke-readiness.log ]]; then
+              tail -n 1 .tmp/smoke-readiness.log
+            fi
+            sleep 10
+          done
+
+          echo "Timed out waiting for $BASE_URL to become reachable over HTTPS"
+          exit 1
       - name: Run Smoke (deployed)
         run: pnpm test:e2e:smoke
         env:

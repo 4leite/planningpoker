@@ -6,11 +6,11 @@ on:
       environment:
         required: true
         type: string
-      worker_name:
+      production_base_url:
         required: false
         default: ""
         type: string
-      workers_dev_subdomain:
+      worker_name:
         required: false
         default: ""
         type: string
@@ -61,6 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           pnpm build
 
           deploy_args=()
@@ -68,10 +69,30 @@ jobs:
             deploy_args+=(--name "${{ inputs.worker_name }}")
           fi
 
+          deployed_url=""
+
+          if [[ "${{ inputs.environment }}" == "production" && -n "${{ inputs.production_base_url }}" ]]; then
+            production_hostname="${{ inputs.production_base_url }}"
+            production_hostname="${production_hostname#https://}"
+            production_hostname="${production_hostname#http://}"
+            production_hostname="${production_hostname%%/*}"
+            deploy_args+=(--domain "$production_hostname")
+            deployed_url="https://$production_hostname"
+          fi
+
           pnpm wrangler deploy "${deploy_args[@]}"
 
-          if [[ -n "${{ inputs.worker_name }}" && -n "${{ inputs.workers_dev_subdomain }}" ]]; then
-            url="https://${{ inputs.worker_name }}.${{ inputs.workers_dev_subdomain }}.workers.dev"
-            echo "url=${url}" >> "$GITHUB_OUTPUT"
-            echo "Deployed preview URL: ${url}" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ inputs.environment }}" == "preview" && -n "${{ inputs.worker_name }}" ]]; then
+            workers_subdomain="$({
+              curl --silent --show-error --fail \
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                --header "Content-Type: application/json" \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+            } | node -e 'let body="";process.stdin.setEncoding("utf8");process.stdin.on("data",(chunk)=>body+=chunk);process.stdin.on("end",()=>{const payload=JSON.parse(body);if(!payload?.success||!payload?.result?.subdomain){process.exit(1)}process.stdout.write(`${payload.result.subdomain}.workers.dev`)})')"
+            deployed_url="https://${{ inputs.worker_name }}.${workers_subdomain}"
+          fi
+
+          if [[ -n "$deployed_url" ]]; then
+            echo "url=${deployed_url}" >> "$GITHUB_OUTPUT"
+            echo "Deployed URL: ${deployed_url}" >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -16,7 +16,6 @@ jobs:
     with:
       environment: preview
       preview_worker_name: planningpoker-pr-${{ github.event.pull_request.number }}
-      preview_workers_dev_subdomain: ${{ vars.CLOUDFLARE_WORKERS_DEV_SUBDOMAIN }}
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
