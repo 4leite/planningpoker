@@ -10,10 +10,6 @@ on:
         required: false
         default: ""
         type: string
-      preview_worker_name:
-        required: false
-        default: ""
-        type: string
     secrets:
       CLOUDFLARE_ACCOUNT_ID:
         required: true
@@ -84,48 +80,23 @@ jobs:
             test/playwright-report/**
             test/results/**
 
-  deploy-preview:
-    name: Deploy Preview
-    if: ${{ inputs.environment == 'preview' }}
+  deploy:
+    name: Deploy
     needs: [validate, e2e]
     uses: ./.github/workflows/call-deploy.yml
     with:
-      environment: preview
-      worker_name: ${{ inputs.preview_worker_name }}
+      environment: ${{ inputs.environment }}
+      production_base_url: ${{ inputs.production_base_url }}
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   smoke:
     name: Smoke Test
-    needs: [deploy-preview]
-    if: ${{ inputs.environment == 'preview' }}
+    needs: [deploy]
     uses: ./.github/workflows/call-smoke.yml
     with:
-      base_url: ${{ needs.deploy-preview.outputs.url }}
-    secrets:
-      CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
-      CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
-
-  deploy-production:
-    name: Deploy Production
-    if: ${{ inputs.environment == 'production' }}
-    needs: [validate, e2e]
-    uses: ./.github/workflows/call-deploy.yml
-    with:
-      environment: production
-      production_base_url: ${{ inputs.production_base_url }}
-    secrets:
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
-  smoke-production:
-    name: Smoke Test Production
-    needs: [deploy-production]
-    if: ${{ inputs.environment == 'production' && inputs.production_base_url != '' }}
-    uses: ./.github/workflows/call-smoke.yml
-    with:
-      base_url: ${{ inputs.production_base_url }}
+      base_url: ${{ needs.deploy.outputs.url }}
     secrets:
       CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
       CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}

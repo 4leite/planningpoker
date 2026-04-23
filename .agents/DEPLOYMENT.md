@@ -13,7 +13,7 @@
 - This Worker uses one isolated preview Worker per PR, named `planningpoker-pr-<number>`, so pull
   requests do not clobber each other.
 - Production deploys attach the hostname configured in the `CLOUDFLARE_PRODUCTION_BASE_URL`
-  repository variable.
+  repository variable. Store this as a bare hostname such as `jpp.ehmdash.com`, not a full URL.
 - Preview deploys use each PR Worker's built-in `workers.dev` hostname, such as
   `planningpoker-pr-123.<account-subdomain>.workers.dev`, to avoid per-hostname certificate
   provisioning delays.
