@@ -15,7 +15,8 @@ const extraHTTPHeaders =
 export default defineConfig({
   testDir: "./test/e2e",
   outputDir: "./test/results",
-  timeout: 120_000,
+  timeout: 30_000,
+  retries: 1,
   reporter: [["list"], ["html", { open: "never", outputFolder: "test/playwright-report" }]],
   use: {
     baseURL,
@@ -40,7 +41,7 @@ export default defineConfig({
         command: "pnpm preview:e2e",
         url: baseURL,
         reuseExistingServer: false,
-        timeout: 900_000,
+        timeout: 60_000,
         stdout: "pipe",
         stderr: "pipe",
       },
