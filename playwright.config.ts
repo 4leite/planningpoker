@@ -23,6 +23,17 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
+  projects: [
+    {
+      name: "smoke-setup",
+      grep: /@setup/,
+    },
+    {
+      name: "main",
+      grepInvert: /@setup/,
+      dependencies: ["smoke-setup"],
+    },
+  ],
   webServer: remoteBaseUrl
     ? undefined
     : {
