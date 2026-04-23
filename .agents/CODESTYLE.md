@@ -3,7 +3,7 @@
 ## General
 
 - Avoid comments unless referencing an external bug or workaround
-- Aviod premature optimisation - YAGNI
+- Avoid premature optimisation - YAGNI
 - Simple, direct code is easier to fix, test, and understand. Excess options create "dead code" or
   "configuration hell" that slows down development.
 - Keep the scaffold minimal until product requirements force new dependencies.

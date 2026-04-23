@@ -20,7 +20,6 @@ import {
   leaveRoomState,
   rerollRoomState,
   resetRoomState,
-  revealRoomState,
   setRoomResultState,
   type CardValue,
   type RoomState,
@@ -248,14 +247,7 @@ export const RoomScreen = ({
   })
 
   const revealVotesMutation = useMutation({
-    ...createRoomMutationOptions(
-      () => ({ type: "room.reveal" }),
-      (currentRoom) =>
-        revealRoomState({
-          room: currentRoom,
-          now: Date.now(),
-        }),
-    ),
+    ...createRoomMutationOptions(() => ({ type: "room.reveal" })),
   })
 
   const resetRoundMutation = useMutation({
@@ -295,15 +287,11 @@ export const RoomScreen = ({
     ),
   })
 
-  const isPending =
-    joinRoomMutation.isPending ||
-    leaveRoomMutation.isPending ||
-    changeRoleMutation.isPending ||
-    castVoteMutation.isPending ||
-    revealVotesMutation.isPending ||
-    resetRoundMutation.isPending ||
-    rerollRoundMutation.isPending ||
-    setRoomResultMutation.isPending
+  const isJoinPending = joinRoomMutation.isPending
+  const isRoleChangePending = changeRoleMutation.isPending
+  const isRevealPending = revealVotesMutation.isPending
+  const isRoundResetPending = resetRoundMutation.isPending || rerollRoundMutation.isPending
+  const isResultPending = setRoomResultMutation.isPending
 
   const handleJoinRoom = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -442,7 +430,7 @@ export const RoomScreen = ({
                   <span className="hidden sm:inline">spectate</span>
                   <Switch
                     checked={currentMember?.role === "spectator"}
-                    disabled={!currentMember || isPending}
+                    disabled={!currentMember || isRoleChangePending}
                     aria-label="Spectate"
                     onCheckedChange={(checked) =>
                       handleRoleSwitch(checked ? "spectator" : "participant")
@@ -466,8 +454,11 @@ export const RoomScreen = ({
 
       <VoteDeck
         selectedVote={room?.revealed ? (room.result ?? null) : (currentMember?.vote ?? null)}
-        disabled={room?.revealed ? !isResultInputFocused : currentMember?.role !== "participant"}
-        isPending={isPending}
+        disabled={
+          room?.revealed
+            ? !isResultInputFocused || isResultPending || isRoundResetPending
+            : currentMember?.role !== "participant"
+        }
         preventButtonFocus={room?.revealed && isResultInputFocused}
         onVote={room?.revealed ? handleResultChange : handleVote}
       />
@@ -510,7 +501,7 @@ export const RoomScreen = ({
                     }}
                     size={2}
                     className="w-12 text-center text-sm font-semibold sm:text-base"
-                    disabled={isPending}
+                    disabled={isResultPending || isRoundResetPending}
                   />
                 </div>
               ) : (
@@ -527,7 +518,7 @@ export const RoomScreen = ({
                     type="button"
                     variant="outline"
                     onClick={handleReroll}
-                    disabled={isPending || !canReset}
+                    disabled={isRoundResetPending || !canReset}
                     className="h-8 w-full text-xs sm:h-9 sm:text-sm"
                   >
                     Reroll
@@ -535,7 +526,7 @@ export const RoomScreen = ({
                   <Button
                     type="button"
                     onClick={handleAccept}
-                    disabled={isPending || !canReset}
+                    disabled={isRoundResetPending || !canReset}
                     className="h-8 w-full text-xs sm:h-9 sm:text-sm"
                   >
                     Accept
@@ -545,7 +536,7 @@ export const RoomScreen = ({
                 <Button
                   type="button"
                   onClick={handleReveal}
-                  disabled={isPending || room.members.length === 0}
+                  disabled={isRevealPending || room.members.length === 0}
                   className="h-8 w-full text-xs sm:h-9 sm:text-sm"
                 >
                   Reveal
@@ -563,7 +554,7 @@ export const RoomScreen = ({
       <RoomJoinPanel
         open={!currentMember}
         joinName={joinName}
-        isPending={isPending}
+        isPending={isJoinPending}
         errorMessage={feedbackMessage}
         onJoinNameChange={setJoinName}
         onSubmit={handleJoinRoom}
