@@ -15,7 +15,7 @@ jobs:
     name: CI
     uses: ./.github/workflows/call-ci.yml
     with:
-      environment: production
+      environment: Production
       production_base_url: ${{ vars.CLOUDFLARE_PRODUCTION_BASE_URL }}
     secrets:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

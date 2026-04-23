@@ -4,9 +4,9 @@ set -euo pipefail
 
 pnpm build
 
-if [[ "${DEPLOY_ENVIRONMENT:-}" == "preview" ]]; then
+if [[ "${DEPLOY_ENVIRONMENT:-}" == "Preview" ]]; then
   set -- --name "planningpoker-pr-${PR_NUMBER}"
-elif [[ "${DEPLOY_ENVIRONMENT:-}" == "production" ]]; then
+elif [[ "${DEPLOY_ENVIRONMENT:-}" == "Production" ]]; then
   set -- --domain "$PRODUCTION_BASE_URL"
 else
   set --
