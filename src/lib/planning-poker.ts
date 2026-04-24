@@ -36,6 +36,7 @@ export const roomHistoryEntrySchema = z.object({
 export const roomStateSchema = z.object({
   roomId: roomIdSchema,
   createdAt: z.number().int().nonnegative(),
+  dealerMemberId: z.string().uuid().nullable(),
   expiresAt: z.number().int().nonnegative(),
   history: z.array(roomHistoryEntrySchema).default([]),
   result: cardValueSchema.nullable(),
@@ -79,12 +80,14 @@ const numericCardEntries = cardValues.flatMap((cardValue) => {
 const updateRoom = (
   room: RoomState,
   {
+    dealerMemberId = room.dealerMemberId,
     history = room.history,
     members = room.members,
     result = room.result,
     revealed = room.revealed,
     now,
   }: {
+    dealerMemberId?: string | null
     history?: RoomHistoryEntry[]
     members?: RoomMember[]
     result?: CardValue | null
@@ -93,6 +96,7 @@ const updateRoom = (
   },
 ) => {
   if (
+    dealerMemberId === room.dealerMemberId &&
     history === room.history &&
     members === room.members &&
     result === room.result &&
@@ -103,6 +107,7 @@ const updateRoom = (
 
   return {
     ...room,
+    dealerMemberId,
     history,
     members,
     result,
@@ -128,6 +133,7 @@ export const createRoomState = ({ roomId, now }: { roomId: string; now: number }
   roomStateSchema.parse({
     roomId,
     createdAt: now,
+    dealerMemberId: null,
     expiresAt: now + roomLifetimeMs,
     history: [],
     result: null,
@@ -142,6 +148,9 @@ export const getParticipants = (room: RoomState) =>
 
 export const getSpectators = (room: RoomState) =>
   room.members.filter((member) => member.role === "spectator")
+
+export const getActiveDealer = (room: RoomState) =>
+  room.members.find((member) => member.id === room.dealerMemberId) ?? null
 
 export const getVoteProgress = (room: RoomState) => {
   const participants = getParticipants(room)
@@ -302,6 +311,25 @@ export const joinRoomState = ({
   })
 }
 
+const requireRoomMember = (room: RoomState, memberId: string) => {
+  const member = room.members.find((entry) => entry.id === memberId)
+
+  if (!member) {
+    throw new Error("room_member_missing")
+  }
+
+  return member
+}
+
+const requireDealerControl = (room: RoomState, memberId: string) => {
+  requireRoomMember(room, memberId)
+
+  const activeDealer = getActiveDealer(room)
+  if (activeDealer && activeDealer.id !== memberId) {
+    throw new Error("dealer_action_forbidden")
+  }
+}
+
 export const leaveRoomState = ({
   room,
   memberId,
@@ -334,11 +362,7 @@ export const changeRoleState = ({
   role: RoomMemberRole
   now: number
 }) => {
-  const member = room.members.find((entry) => entry.id === memberId)
-
-  if (!member) {
-    throw new Error("room_member_missing")
-  }
+  const member = requireRoomMember(room, memberId)
 
   if (member.role === role) {
     return room
@@ -360,6 +384,54 @@ export const changeRoleState = ({
   })
 }
 
+export const claimDealerState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  requireRoomMember(room, memberId)
+
+  const activeDealer = getActiveDealer(room)
+  if (activeDealer?.id === memberId) {
+    return room
+  }
+
+  if (activeDealer) {
+    throw new Error("dealer_already_claimed")
+  }
+
+  return updateRoom(room, {
+    dealerMemberId: memberId,
+    now,
+  })
+}
+
+export const passDealerState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  requireRoomMember(room, memberId)
+
+  const activeDealer = getActiveDealer(room)
+  if (!activeDealer || activeDealer.id !== memberId) {
+    throw new Error("dealer_action_forbidden")
+  }
+
+  return updateRoom(room, {
+    dealerMemberId: null,
+    now,
+  })
+}
+
 export const castVoteState = ({
   room,
   memberId,
@@ -371,11 +443,7 @@ export const castVoteState = ({
   vote: CardValue
   now: number
 }) => {
-  const member = room.members.find((entry) => entry.id === memberId)
-
-  if (!member) {
-    throw new Error("room_member_missing")
-  }
+  const member = requireRoomMember(room, memberId)
 
   if (member.role !== "participant") {
     throw new Error("spectators_cannot_vote")
@@ -402,7 +470,17 @@ export const castVoteState = ({
   })
 }
 
-export const revealRoomState = ({ room, now }: { room: RoomState; now: number }) => {
+export const revealRoomState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  requireDealerControl(room, memberId)
+
   if (room.revealed) {
     return room
   }
@@ -420,13 +498,17 @@ export const revealRoomState = ({ room, now }: { room: RoomState; now: number })
 
 export const setRoomResultState = ({
   room,
+  memberId,
   result,
   now,
 }: {
   room: RoomState
+  memberId: string
   result: CardValue
   now: number
 }) => {
+  requireDealerControl(room, memberId)
+
   if (!room.revealed) {
     throw new Error("round_not_revealed")
   }
@@ -448,7 +530,17 @@ export const setRoomResultState = ({
   })
 }
 
-export const resetRoomState = ({ room, now }: { room: RoomState; now: number }) => {
+export const resetRoomState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  requireDealerControl(room, memberId)
+
   const nextMembers = room.members.map((member) => ({
     ...member,
     vote: null,
@@ -467,8 +559,16 @@ export const resetRoomState = ({ room, now }: { room: RoomState; now: number }) 
   })
 }
 
-export const rerollRoomState = ({ room, now }: { room: RoomState; now: number }) => {
-  const resetRoom = resetRoomState({ room, now })
+export const rerollRoomState = ({
+  room,
+  memberId,
+  now,
+}: {
+  room: RoomState
+  memberId: string
+  now: number
+}) => {
+  const resetRoom = resetRoomState({ room, memberId, now })
 
   if (resetRoom === room || !room.revealed || room.history.length === 0) {
     return resetRoom

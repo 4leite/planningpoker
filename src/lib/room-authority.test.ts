@@ -131,6 +131,7 @@ describe("room authority lifecycle", () => {
     const resetRoom = await authority.applyAction({
       type: "room.reset",
       mutationId: "reset-1",
+      memberId: kaiId,
     })
 
     expect(votedRoom.expiresAt).toBe(1_000 + roomLifetimeMs)
@@ -146,12 +147,14 @@ describe("room authority lifecycle", () => {
     const revealedRoom = await authority.applyAction({
       type: "room.reveal",
       mutationId: "reveal-1",
+      memberId: kaiId,
     })
 
     now = 1_400
     const resultRoom = await authority.applyAction({
       type: "room.setResult",
       mutationId: "result-1",
+      memberId: kaiId,
       result: "8",
     })
 
