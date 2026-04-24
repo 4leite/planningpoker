@@ -1,6 +1,11 @@
 import { cn } from "@tohuhono/utils"
 
-import { calculateVoteMode, getVoteExtremesOutsideMode, type RoomState } from "#/lib/planning-poker"
+import {
+  calculateVoteMode,
+  getActiveDealer,
+  getVoteExtremesOutsideMode,
+  type RoomState,
+} from "#/lib/planning-poker"
 
 const sortMembers = (members: RoomState["members"], currentMemberId: string | null) =>
   [...members].sort((left, right) => {
@@ -23,6 +28,7 @@ export const RoomMemberList = ({
   currentMemberId: string | null
 }) => {
   const members = sortMembers(room.members, currentMemberId)
+  const activeDealer = getActiveDealer(room)
   const modeVote = room.revealed ? calculateVoteMode(room.members) : null
   const { highestVote, lowestVote } = room.revealed
     ? getVoteExtremesOutsideMode(room.members)
@@ -37,6 +43,7 @@ export const RoomMemberList = ({
         const left = 50 + Math.cos(angle) * radiusX
         const top = 50 + Math.sin(angle) * radiusY
         const isCurrent = member.id === currentMemberId
+        const isDealer = activeDealer?.id === member.id
         const hasVote = member.vote !== null
         const isUnresolvedParticipant =
           room.revealed &&
@@ -65,6 +72,11 @@ export const RoomMemberList = ({
               top: `clamp(2.75rem, ${top}%, calc(100% - 2.75rem))`,
             }}
           >
+            {isDealer ? (
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full border bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-amber-900 uppercase shadow-sm">
+                Dealer
+              </div>
+            ) : null}
             <div className="truncate text-sm font-medium">{member.name}</div>
             <div
               className={cn(

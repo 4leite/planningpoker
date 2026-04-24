@@ -17,6 +17,10 @@ export const spectateToggle = (page: Page) => page.getByRole("switch", { name: /
 
 export const revealButton = (page: Page) => page.getByRole("button", { name: "Reveal" })
 
+export const claimDealerButton = (page: Page) => page.getByRole("button", { name: "Claim dealer" })
+
+export const passDealerButton = (page: Page) => page.getByRole("button", { name: "Pass dealer" })
+
 export const acceptButton = (page: Page) => page.getByRole("button", { name: "Accept" })
 
 export const rerollButton = (page: Page) => page.getByRole("button", { name: "Reroll" })
@@ -41,3 +45,6 @@ export const roomNotFoundMessage = (page: Page) => page.getByText("room not foun
 
 export const seatStatus = (page: Page, memberName: string, value: string | RegExp): Locator =>
   roomSeat(page, memberName).getByText(value, { exact: typeof value === "string" })
+
+export const dealerPuck = (page: Page, memberName: string) =>
+  roomSeat(page, memberName).getByText("Dealer", { exact: true })

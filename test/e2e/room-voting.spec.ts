@@ -92,7 +92,9 @@ test.describe("Room voting", () => {
     await expect(voteButton(page, "8")).toHaveAttribute("aria-pressed", "true")
   })
 
-  test("reveal disables itself while the reveal request is pending @realtime", async ({ page }) => {
+  test("reveal swaps into the revealed controls while the request is pending @realtime", async ({
+    page,
+  }) => {
     await delayRoomSocketActions({
       page,
       actionTypes: ["room.reveal"],
@@ -103,7 +105,7 @@ test.describe("Room voting", () => {
     await joinRoom(page, "Alice")
 
     await revealButton(page).click()
-    await expect(revealButton(page)).toBeDisabled()
+    await expect(revealButton(page)).toHaveCount(0)
   })
 
   test("votes stay hidden until reveal and update other clients live @smoke @realtime", async ({

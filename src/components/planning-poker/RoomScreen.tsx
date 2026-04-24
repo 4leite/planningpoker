@@ -15,9 +15,13 @@ import {
   cardValues,
   castVoteState,
   changeRoleState,
+  claimDealerState,
+  getActiveDealer,
   getVoteProgress,
   joinRoomState,
   leaveRoomState,
+  passDealerState,
+  revealRoomState,
   rerollRoomState,
   resetRoomState,
   setRoomResultState,
@@ -51,6 +55,10 @@ const formatRoomError = (error: unknown) => {
       return "The cards are already face up. Reset to start a new round."
     case "round_not_revealed":
       return "Reveal the cards before changing the result."
+    case "dealer_action_forbidden":
+      return "Only the current dealer can do that. Ask them to pass dealing or clear it."
+    case "dealer_already_claimed":
+      return "Dealer is already claimed. Ask them to pass dealer first."
     default:
       return error.message || "Something slipped while updating the room. Try again."
   }
@@ -246,49 +254,167 @@ export const RoomScreen = ({
     ),
   })
 
+  const claimDealerMutation = useMutation({
+    ...createRoomMutationOptions(
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.claimDealer",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return claimDealerState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          now: Date.now(),
+        })
+      },
+    ),
+  })
+
   const revealVotesMutation = useMutation({
-    ...createRoomMutationOptions(() => ({ type: "room.reveal" })),
+    ...createRoomMutationOptions(
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.reveal",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return revealRoomState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          now: Date.now(),
+        })
+      },
+    ),
   })
 
   const resetRoundMutation = useMutation({
     ...createRoomMutationOptions(
-      () => ({ type: "room.reset" }),
-      (currentRoom) =>
-        resetRoomState({
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.reset",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return resetRoomState({
           room: currentRoom,
+          memberId: identity.memberId,
           now: Date.now(),
-        }),
+        })
+      },
     ),
   })
 
   const rerollRoundMutation = useMutation({
     ...createRoomMutationOptions(
-      () => ({ type: "room.reroll" }),
-      (currentRoom) =>
-        rerollRoomState({
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.reroll",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return rerollRoomState({
           room: currentRoom,
+          memberId: identity.memberId,
           now: Date.now(),
-        }),
+        })
+      },
     ),
   })
 
   const setRoomResultMutation = useMutation({
     ...createRoomMutationOptions(
-      (nextResult: CardValue) => ({
-        type: "room.setResult",
-        result: nextResult,
-      }),
-      (currentRoom, nextResult) =>
-        setRoomResultState({
+      (nextResult: CardValue) => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.setResult",
+          memberId: identity.memberId,
+          result: nextResult,
+        }
+      },
+      (currentRoom, nextResult) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return setRoomResultState({
           room: currentRoom,
+          memberId: identity.memberId,
           result: nextResult,
           now: Date.now(),
-        }),
+        })
+      },
+    ),
+  })
+
+  const passDealerMutation = useMutation({
+    ...createRoomMutationOptions(
+      () => {
+        if (!identity) {
+          throw new Error("room_member_missing")
+        }
+
+        return {
+          type: "room.passDealer",
+          memberId: identity.memberId,
+        }
+      },
+      (currentRoom) => {
+        if (!identity) {
+          return currentRoom
+        }
+
+        return passDealerState({
+          room: currentRoom,
+          memberId: identity.memberId,
+          now: Date.now(),
+        })
+      },
     ),
   })
 
   const isJoinPending = joinRoomMutation.isPending
   const isRoleChangePending = changeRoleMutation.isPending
+  const isDealerMutationPending = claimDealerMutation.isPending || passDealerMutation.isPending
   const isRevealPending = revealVotesMutation.isPending
   const isRoundResetPending = resetRoundMutation.isPending || rerollRoundMutation.isPending
   const isResultPending = setRoomResultMutation.isPending
@@ -332,6 +458,11 @@ export const RoomScreen = ({
     revealVotesMutation.mutate(undefined)
   }
 
+  const handleClaimDealer = () => {
+    setFeedbackMessage(null)
+    claimDealerMutation.mutate(undefined)
+  }
+
   const handleAccept = () => {
     setFeedbackMessage(null)
     resetRoundMutation.mutate(undefined)
@@ -340,6 +471,11 @@ export const RoomScreen = ({
   const handleReroll = () => {
     setFeedbackMessage(null)
     rerollRoundMutation.mutate(undefined)
+  }
+
+  const handlePassDealer = () => {
+    setFeedbackMessage(null)
+    passDealerMutation.mutate(undefined)
   }
 
   const commitResultInput = () => {
@@ -403,6 +539,17 @@ export const RoomScreen = ({
 
   const canReset = room.revealed || room.members.some((member) => member.vote !== null)
   const centerLabel = `${voteProgress?.readyCount ?? 0} / ${voteProgress?.participantCount ?? 0}`
+  const activeDealer = getActiveDealer(room)
+  const isCurrentDealer = activeDealer?.id === currentMember?.id
+  const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
+  const canClaimDealer = Boolean(currentMember) && activeDealer === null
+  const showClaimDealer = canClaimDealer
+  const showPassDealer = Boolean(isCurrentDealer)
+
+  const canEditResult = room.revealed && canUseDealerControls
+  const canReveal = canUseDealerControls && Boolean(currentMember)
+  const canShowRoundControls = canReveal
+  const isDealerControlsBusy = isDealerMutationPending || isRevealPending || isRoundResetPending
 
   return (
     <>
@@ -456,10 +603,10 @@ export const RoomScreen = ({
         selectedVote={room?.revealed ? (room.result ?? null) : (currentMember?.vote ?? null)}
         disabled={
           room?.revealed
-            ? !isResultInputFocused || isResultPending || isRoundResetPending
+            ? !canEditResult || !isResultInputFocused || isResultPending || isRoundResetPending
             : currentMember?.role !== "participant"
         }
-        preventButtonFocus={room?.revealed && isResultInputFocused}
+        preventButtonFocus={room?.revealed && canEditResult && isResultInputFocused}
         onVote={room?.revealed ? handleResultChange : handleVote}
       />
       <Card className="w-full max-w-5xl">
@@ -472,7 +619,7 @@ export const RoomScreen = ({
                 room.revealed ? "w-44 px-4 sm:w-52 sm:px-5" : "w-44 px-5 sm:w-56 sm:px-6"
               }`}
             >
-              {room.revealed ? (
+              {room.revealed && canEditResult ? (
                 <div className="flex w-full justify-center">
                   <Input
                     id="result"
@@ -504,6 +651,10 @@ export const RoomScreen = ({
                     disabled={isResultPending || isRoundResetPending}
                   />
                 </div>
+              ) : room.revealed ? (
+                <div className="text-foreground text-lg font-semibold sm:text-xl">
+                  {room.result ?? "-"}
+                </div>
               ) : (
                 <div className="text-muted-foreground text-sm">{centerLabel}</div>
               )}
@@ -512,36 +663,60 @@ export const RoomScreen = ({
                   <option key={cardValue} value={cardValue} />
                 ))}
               </datalist>
-              {room.revealed ? (
-                <div className="grid w-full grid-cols-2 gap-2">
+              {canShowRoundControls ? (
+                room.revealed ? (
+                  <div className="grid w-full grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleReroll}
+                      disabled={isRoundResetPending || !canReset}
+                      className="h-8 w-full text-xs sm:h-9 sm:text-sm"
+                    >
+                      Reroll
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleAccept}
+                      disabled={isRoundResetPending || !canReset}
+                      className="h-8 w-full text-xs sm:h-9 sm:text-sm"
+                    >
+                      Accept
+                    </Button>
+                  </div>
+                ) : (
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={handleReroll}
-                    disabled={isRoundResetPending || !canReset}
+                    onClick={handleReveal}
+                    disabled={isRevealPending || room.members.length === 0}
                     className="h-8 w-full text-xs sm:h-9 sm:text-sm"
                   >
-                    Reroll
+                    Reveal
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={handleAccept}
-                    disabled={isRoundResetPending || !canReset}
-                    className="h-8 w-full text-xs sm:h-9 sm:text-sm"
-                  >
-                    Accept
-                  </Button>
-                </div>
-              ) : (
+                )
+              ) : null}
+              {showClaimDealer ? (
                 <Button
                   type="button"
-                  onClick={handleReveal}
-                  disabled={isRevealPending || room.members.length === 0}
+                  variant="outline"
+                  onClick={handleClaimDealer}
+                  disabled={isDealerControlsBusy}
                   className="h-8 w-full text-xs sm:h-9 sm:text-sm"
                 >
-                  Reveal
+                  Claim dealer
                 </Button>
-              )}
+              ) : null}
+              {showPassDealer ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePassDealer}
+                  disabled={isDealerControlsBusy}
+                  className="h-8 w-full text-xs sm:h-9 sm:text-sm"
+                >
+                  Pass dealer
+                </Button>
+              ) : null}
             </div>
           </div>
         </CardContent>

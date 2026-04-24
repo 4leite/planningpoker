@@ -1,6 +1,14 @@
 import { expect, test } from "./fixtures/room"
-import { castVote, setSpectatorMode } from "./support/member-actions"
-import { roomSeat, seatStatus, spectateToggle, voteButton } from "./support/room-selectors"
+import { castVote, claimDealer, passDealer, setSpectatorMode } from "./support/member-actions"
+import {
+  claimDealerButton,
+  dealerPuck,
+  revealButton,
+  roomSeat,
+  seatStatus,
+  spectateToggle,
+  voteButton,
+} from "./support/room-selectors"
 
 test.describe("Room roles", () => {
   test("spectators cannot cast a vote from the deck @errors", async ({ createRoomWithCreator }) => {
@@ -48,5 +56,29 @@ test.describe("Room roles", () => {
 
     await castVote(creator.page, "8")
     await expect(seatStatus(bob.page, "Alice", "voted")).toBeVisible()
+  })
+
+  test("dealer claim gates reveal controls until passed back to the room @realtime", async ({
+    createRoomWithCreator,
+    openMember,
+  }) => {
+    const { roomUrl, creator } = await createRoomWithCreator("Alice")
+    const bob = await openMember(roomUrl, "Bob")
+
+    await expect(claimDealerButton(creator.page)).toBeVisible()
+    await expect(claimDealerButton(bob.page)).toBeVisible()
+
+    await claimDealer(creator.page)
+
+    await expect(dealerPuck(creator.page, "Alice")).toBeVisible()
+    await expect(revealButton(creator.page)).toBeVisible()
+    await expect(claimDealerButton(bob.page)).toHaveCount(0)
+    await expect(revealButton(bob.page)).toHaveCount(0)
+
+    await passDealer(creator.page)
+
+    await expect(claimDealerButton(bob.page)).toBeVisible()
+    await expect(revealButton(bob.page)).toBeVisible()
+    await expect(dealerPuck(bob.page, "Alice")).toHaveCount(0)
   })
 })

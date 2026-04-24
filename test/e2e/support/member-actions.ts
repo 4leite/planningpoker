@@ -2,9 +2,11 @@ import { expect, type Page } from "@playwright/test"
 
 import {
   acceptButton,
+  claimDealerButton,
   createRoomButton,
   displayNameInput,
   landingJoinButton,
+  passDealerButton,
   rerollButton,
   revealButton,
   roomIdInput,
@@ -54,6 +56,14 @@ export const castVote = async (page: Page, vote: string) => {
 
 export const revealVotes = async (page: Page) => {
   await revealButton(page).click()
+}
+
+export const claimDealer = async (page: Page) => {
+  await claimDealerButton(page).click()
+}
+
+export const passDealer = async (page: Page) => {
+  await passDealerButton(page).click()
 }
 
 export const acceptRound = async (page: Page) => {

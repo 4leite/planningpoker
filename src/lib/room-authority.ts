@@ -1,9 +1,11 @@
 import {
   castVoteState,
   changeRoleState,
+  claimDealerState,
   createRoomState,
   joinRoomState,
   leaveRoomState,
+  passDealerState,
   resetRoomState,
   rerollRoomState,
   revealRoomState,
@@ -101,15 +103,28 @@ export const createRoomAuthority = ({
           vote: action.vote,
           now: currentTime,
         })
+      case "room.claimDealer":
+        return claimDealerState({
+          room,
+          memberId: action.memberId,
+          now: currentTime,
+        })
+      case "room.passDealer":
+        return passDealerState({
+          room,
+          memberId: action.memberId,
+          now: currentTime,
+        })
       case "room.reveal":
-        return revealRoomState({ room, now: currentTime })
+        return revealRoomState({ room, memberId: action.memberId, now: currentTime })
       case "room.reset":
-        return resetRoomState({ room, now: currentTime })
+        return resetRoomState({ room, memberId: action.memberId, now: currentTime })
       case "room.reroll":
-        return rerollRoomState({ room, now: currentTime })
+        return rerollRoomState({ room, memberId: action.memberId, now: currentTime })
       case "room.setResult":
         return setRoomResultState({
           room,
+          memberId: action.memberId,
           result: action.result,
           now: currentTime,
         })

@@ -43,20 +43,34 @@ export const castVoteRequestSchema = z.object({
   vote: cardValueSchema,
 })
 
+export const claimDealerRequestSchema = z.object({
+  roomId: roomIdSchema,
+  memberId: z.string().uuid(),
+})
+
+export const passDealerRequestSchema = z.object({
+  roomId: roomIdSchema,
+  memberId: z.string().uuid(),
+})
+
 export const revealRoomRequestSchema = z.object({
   roomId: roomIdSchema,
+  memberId: z.string().uuid(),
 })
 
 export const resetRoomRequestSchema = z.object({
   roomId: roomIdSchema,
+  memberId: z.string().uuid(),
 })
 
 export const rerollRoomRequestSchema = z.object({
   roomId: roomIdSchema,
+  memberId: z.string().uuid(),
 })
 
 export const setRoomResultRequestSchema = z.object({
   roomId: roomIdSchema,
+  memberId: z.string().uuid(),
   result: cardValueSchema,
 })
 
@@ -87,20 +101,34 @@ export const roomSocketActionSchema = z.discriminatedUnion("type", [
     vote: cardValueSchema,
   }),
   z.object({
+    type: z.literal("room.claimDealer"),
+    mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
+  }),
+  z.object({
+    type: z.literal("room.passDealer"),
+    mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
+  }),
+  z.object({
     type: z.literal("room.reveal"),
     mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
   }),
   z.object({
     type: z.literal("room.reset"),
     mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
   }),
   z.object({
     type: z.literal("room.reroll"),
     mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
   }),
   z.object({
     type: z.literal("room.setResult"),
     mutationId: roomSocketMutationIdSchema,
+    memberId: z.string().uuid(),
     result: cardValueSchema,
   }),
 ])
@@ -130,6 +158,8 @@ export type JoinRoomRequest = z.infer<typeof joinRoomRequestSchema>
 export type LeaveRoomRequest = z.infer<typeof leaveRoomRequestSchema>
 export type ChangeRoleRequest = z.infer<typeof changeRoleRequestSchema>
 export type CastVoteRequest = z.infer<typeof castVoteRequestSchema>
+export type ClaimDealerRequest = z.infer<typeof claimDealerRequestSchema>
+export type PassDealerRequest = z.infer<typeof passDealerRequestSchema>
 export type RevealRoomRequest = z.infer<typeof revealRoomRequestSchema>
 export type ResetRoomRequest = z.infer<typeof resetRoomRequestSchema>
 export type RerollRoomRequest = z.infer<typeof rerollRoomRequestSchema>

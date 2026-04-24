@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url"
 
-import { configDefaults, defineConfig } from "vitest/config"
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   resolve: {
@@ -10,7 +10,6 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["**/*.test.?(c|m)[jt]s?(x)"],
-    exclude: [...configDefaults.exclude],
+    include: ["src/**/*.test.?(c|m)[jt]s?(x)"],
   },
 })

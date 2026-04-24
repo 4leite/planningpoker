@@ -6,11 +6,15 @@ import {
   calculateVoteMode,
   castVoteState,
   changeRoleState,
+  claimDealerState,
   countCastVotes,
   createRoomState,
   formatAverageVote,
+  getActiveDealer,
   getVoteExtremesOutsideMode,
   joinRoomState,
+  leaveRoomState,
+  passDealerState,
   rerollRoomState,
   resetRoomState,
   revealRoomState,
@@ -72,11 +76,13 @@ describe("planning poker domain rules", () => {
 
     const revealedRoom = revealRoomState({
       room: joinedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1400,
     })
 
     const resetRoom = resetRoomState({
       room: revealedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1600,
     })
 
@@ -125,6 +131,7 @@ describe("planning poker domain rules", () => {
 
     const revealedRoom = revealRoomState({
       room: withVotes,
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1800,
     })
 
@@ -168,11 +175,13 @@ describe("planning poker domain rules", () => {
         vote: "5",
         now: 1500,
       }),
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1600,
     })
 
     const acceptedReset = resetRoomState({
       room: firstReveal,
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1700,
     })
 
@@ -188,11 +197,13 @@ describe("planning poker domain rules", () => {
         vote: "8",
         now: 1900,
       }),
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 2000,
     })
 
     const rerolledRoom = rerollRoomState({
       room: secondReveal,
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 2100,
     })
 
@@ -237,10 +248,12 @@ describe("planning poker domain rules", () => {
       })
       room = revealRoomState({
         room,
+        memberId: memberOneId,
         now: 1500 + round,
       })
       room = resetRoomState({
         room,
+        memberId: memberOneId,
         now: 1600 + round,
       })
     }
@@ -275,11 +288,13 @@ describe("planning poker domain rules", () => {
         vote: "5",
         now: 1500,
       }),
+      memberId: "11111111-1111-4111-8111-111111111111",
       now: 1600,
     })
 
     const updatedRoom = setRoomResultState({
       room: revealedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
       result: "8",
       now: 1700,
     })
@@ -474,5 +489,123 @@ describe("planning poker domain rules", () => {
       highestVote: "8",
       lowestVote: null,
     })
+  })
+
+  it("lets a member claim dealer and pass it back to the room", () => {
+    const joinedRoom = joinRoomState({
+      room: createRoomState({ roomId: "amber-anchor-12", now: 1000 }),
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Mae",
+      now: 1200,
+    })
+
+    const claimedRoom = claimDealerState({
+      room: joinedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1300,
+    })
+    const reopenedRoom = passDealerState({
+      room: claimedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1400,
+    })
+
+    expect(getActiveDealer(claimedRoom)?.name).toBe("Mae")
+    expect(reopenedRoom.dealerMemberId).toBeNull()
+    expect(getActiveDealer(reopenedRoom)).toBeNull()
+  })
+
+  it("treats a departed dealer as unclaimed until they return", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const claimedRoom = claimDealerState({
+      room: two,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1400,
+    })
+    const departedDealerRoom = leaveRoomState({
+      room: claimedRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1500,
+    })
+
+    const revealedRoom = revealRoomState({
+      room: departedDealerRoom,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      now: 1600,
+    })
+
+    expect(departedDealerRoom.dealerMemberId).toBe("11111111-1111-4111-8111-111111111111")
+    expect(getActiveDealer(departedDealerRoom)).toBeNull()
+    expect(revealedRoom.revealed).toBe(true)
+  })
+
+  it("blocks non-dealers from dealer-controlled actions while a dealer is active", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const claimedRoom = claimDealerState({
+      room: two,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1400,
+    })
+
+    expect(() =>
+      revealRoomState({
+        room: claimedRoom,
+        memberId: "22222222-2222-4222-8222-222222222222",
+        now: 1500,
+      }),
+    ).toThrowError("dealer_action_forbidden")
+  })
+
+  it("rejects a new claim while an active dealer already exists", () => {
+    const startRoom = createRoomState({ roomId: "amber-anchor-12", now: 1000 })
+    const one = joinRoomState({
+      room: startRoom,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      name: "Kai",
+      now: 1200,
+    })
+    const two = joinRoomState({
+      room: one,
+      memberId: "22222222-2222-4222-8222-222222222222",
+      name: "Noa",
+      now: 1300,
+    })
+    const claimedRoom = claimDealerState({
+      room: two,
+      memberId: "11111111-1111-4111-8111-111111111111",
+      now: 1400,
+    })
+
+    expect(() =>
+      claimDealerState({
+        room: claimedRoom,
+        memberId: "22222222-2222-4222-8222-222222222222",
+        now: 1500,
+      }),
+    ).toThrowError("dealer_already_claimed")
   })
 })
