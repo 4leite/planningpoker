@@ -2,7 +2,7 @@ import { useIsMutating } from "@tanstack/react-query"
 import { Card, CardContent } from "@tohuhono/ui/card"
 import { useEffect, useState } from "react"
 
-import { useMemberId } from "#/hooks/use-planning-poker-identity"
+import { useCurrentMember } from "#/hooks/use-current-member"
 import {
   useCastVoteMutation,
   roomMutationKey,
@@ -28,12 +28,11 @@ const isCardValue = (value: string): value is CardValue =>
 const useResultInput = ({
   room,
   mutateSetRoomResult,
-  setFeedbackMessage,
 }: {
   room: RoomState | null
   mutateSetRoomResult: (value: CardValue) => void
-  setFeedbackMessage: (msg: string) => void
 }) => {
+  const { setFeedbackMessage } = useRoomFeedback()
   const [resultInput, setResultInput] = useState("")
   const [isResultInputFocused, setIsResultInputFocused] = useState(false)
 
@@ -84,8 +83,7 @@ const useResultInput = ({
 export const RoomCenterPanel = () => {
   const { room } = useRoomData()
 
-  const currentMemberId = useMemberId()
-  const { setFeedbackMessage } = useRoomFeedback()
+  const currentMember = useCurrentMember()
   const mutationOptions = { formatRoomError }
 
   const { mutate: mutateCastVote, isPending: isVotePending } = useCastVoteMutation(mutationOptions)
@@ -98,15 +96,14 @@ export const RoomCenterPanel = () => {
     setIsResultInputFocused,
     commitResultInput,
     handleResultChange,
-  } = useResultInput({ room, mutateSetRoomResult, setFeedbackMessage })
+  } = useResultInput({ room, mutateSetRoomResult })
 
   const roomId = room?.roomId ?? ""
-  const currentMember = room?.members.find((member) => member.id === currentMemberId) ?? null
 
   const voteProgress = room ? getVoteProgress(room) : { readyCount: 0, participantCount: 0 }
   const activeDealer = room ? getActiveDealer(room) : null
-  const isCurrentDealer = activeDealer?.id === currentMemberId
-  const canUseDealerControls = Boolean(currentMemberId) && (!activeDealer || isCurrentDealer)
+  const isCurrentDealer = activeDealer?.id === currentMember?.id
+  const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
   const canEditResult = Boolean(room?.revealed) && canUseDealerControls
   const resetMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reset") })
   const rerollMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reroll") })
@@ -133,7 +130,7 @@ export const RoomCenterPanel = () => {
       <Card className="w-full max-w-5xl">
         <CardContent className="p-4 sm:p-6">
           <div className="bg-muted/20 relative mx-auto aspect-square w-full max-w-4xl rounded-[999px] border sm:aspect-video">
-            <RoomMemberList room={room} currentMemberId={currentMember?.id ?? null} />
+            <RoomMemberList />
 
             <div
               className={`bg-background absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border py-4 text-center shadow-sm sm:py-5 ${
@@ -162,7 +159,7 @@ export const RoomCenterPanel = () => {
                   <option key={cardValue} value={cardValue} />
                 ))}
               </datalist>
-              <RoomCenter.RoundControls room={room} currentMemberId={currentMember?.id ?? null} />
+              <RoomCenter.RoundControls />
             </div>
           </div>
         </CardContent>

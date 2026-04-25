@@ -1,6 +1,7 @@
 import { useState } from "react"
 
-import { useDisplayName, useMemberId, useSetDisplayName } from "#/hooks/use-planning-poker-identity"
+import { useCurrentMember } from "#/hooks/use-current-member"
+import { useDisplayName, useSetDisplayName } from "#/hooks/use-planning-poker-identity"
 import { useJoinRoomMutation } from "#/hooks/use-room-mutations"
 import { useRoomData, useRoomFeedback } from "#/hooks/use-room-realtime"
 
@@ -10,7 +11,7 @@ import { RoomJoinPanel } from "./RoomJoinPanel"
 export const RoomJoinGate = () => {
   const setDisplayName = useSetDisplayName()
   const displayName = useDisplayName()
-  const currentMemberId = useMemberId()
+  const currentMember = useCurrentMember()
   const { room } = useRoomData()
   const { feedbackMessage, clearFeedbackMessage } = useRoomFeedback()
   const [joinName, setJoinName] = useState(displayName)
@@ -21,8 +22,6 @@ export const RoomJoinGate = () => {
   if (!room) {
     return null
   }
-
-  const currentMember = room.members.find((member) => member.id === currentMemberId) ?? null
 
   const handleJoinRoom = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

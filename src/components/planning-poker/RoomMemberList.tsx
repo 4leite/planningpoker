@@ -1,14 +1,14 @@
 import { cn } from "@tohuhono/utils"
-import type { ReactNode } from "react"
 
+import { RoomCenter } from "#/components/planning-poker/RoomCenter"
+import { useCurrentMember } from "#/hooks/use-current-member"
+import { useRoomData } from "#/hooks/use-room-realtime"
 import {
   calculateVoteMode,
   getActiveDealer,
   getVoteExtremesOutsideMode,
   type RoomState,
 } from "#/lib/planning-poker"
-
-import { DealerControls } from "./RoomDealerControls"
 
 const sortMembers = (members: RoomState["members"], currentMemberId: string | null) =>
   [...members].sort((left, right) => {
@@ -23,15 +23,15 @@ const sortMembers = (members: RoomState["members"], currentMemberId: string | nu
     return left.joinedAt - right.joinedAt
   })
 
-export const RoomMemberList = ({
-  room,
-  currentMemberId,
-  dealerControls,
-}: {
-  room: RoomState
-  currentMemberId: string | null
-  dealerControls?: ReactNode
-}) => {
+export const RoomMemberList = () => {
+  const { room } = useRoomData()
+  const currentMember = useCurrentMember()
+
+  if (!room) {
+    return null
+  }
+
+  const currentMemberId = currentMember?.id ?? null
   const members = sortMembers(room.members, currentMemberId)
   const activeDealer = getActiveDealer(room)
   const modeVote = room.revealed ? calculateVoteMode(room.members) : null
@@ -49,7 +49,6 @@ export const RoomMemberList = ({
         const top = 50 + Math.sin(angle) * radiusY
         const isCurrent = member.id === currentMemberId
         const isDealer = activeDealer?.id === member.id
-        const showDealerControls = isCurrent && dealerControls !== undefined
         const hasVote = member.vote !== null
         const isUnresolvedParticipant =
           room.revealed &&
@@ -65,7 +64,7 @@ export const RoomMemberList = ({
             aria-label={`Seat for ${member.name}`}
             className={cn(
               "pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2",
-              showDealerControls && "z-10",
+              isCurrent && "z-10",
             )}
             style={{
               left: `clamp(3.5rem, ${left}%, calc(100% - 3.5rem))`,
@@ -112,7 +111,7 @@ export const RoomMemberList = ({
                       : ""}
               </div>
             </div>
-            {isCurrent ? <DealerControls /> : null}
+            {isCurrent ? <RoomCenter.DealerControls /> : null}
           </article>
         )
       })}

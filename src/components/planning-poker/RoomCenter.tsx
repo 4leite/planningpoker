@@ -3,6 +3,7 @@ import { Button } from "@tohuhono/ui/button"
 import { Input } from "@tohuhono/ui/input"
 import { useRef } from "react"
 
+import { useCurrentMember } from "#/hooks/use-current-member"
 import {
   useClaimDealerMutation,
   usePassDealerMutation,
@@ -11,7 +12,8 @@ import {
   useResetRoundMutation,
   useRevealVotesMutation,
 } from "#/hooks/use-room-mutations"
-import { getActiveDealer, type CardValue, type RoomState } from "#/lib/planning-poker"
+import { useRoomData } from "#/hooks/use-room-realtime"
+import { getActiveDealer, type CardValue } from "#/lib/planning-poker"
 
 import { formatRoomError } from "./room-error"
 
@@ -159,14 +161,14 @@ const PassDealerButton = ({
   </Button>
 )
 
-const RoundControls = ({
-  room,
-  currentMemberId,
-}: {
-  room: RoomState
-  currentMemberId: string | null
-}) => {
-  const currentMember = room.members.find((member) => member.id === currentMemberId) ?? null
+const RoundControls = () => {
+  const { room } = useRoomData()
+  const currentMember = useCurrentMember()
+
+  if (!room) {
+    return null
+  }
+
   const activeDealer = getActiveDealer(room)
   const isCurrentDealer = activeDealer?.id === currentMember?.id
   const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
@@ -204,14 +206,14 @@ const RoundControls = ({
   )
 }
 
-const DealerControls = ({
-  room,
-  currentMemberId,
-}: {
-  room: RoomState
-  currentMemberId: string | null
-}) => {
-  const currentMember = room.members.find((member) => member.id === currentMemberId) ?? null
+const DealerControls = () => {
+  const { room } = useRoomData()
+  const currentMember = useCurrentMember()
+
+  if (!room) {
+    return null
+  }
+
   const activeDealer = getActiveDealer(room)
   const isCurrentDealer = activeDealer?.id === currentMember?.id
   const canClaimDealer = Boolean(currentMember) && activeDealer === null
