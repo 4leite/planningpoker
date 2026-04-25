@@ -1,20 +1,12 @@
-import { Card, CardContent } from "@tohuhono/ui/card";
-import {
-  type Dispatch,
-  type PropsWithChildren,
-  type SetStateAction,
-} from "react";
+import { Card, CardContent } from "@tohuhono/ui/card"
+import { type Dispatch, type PropsWithChildren, type SetStateAction } from "react"
 
-import { useCurrentMember } from "#/hooks/use-current-member";
-import { useRoom } from "#/hooks/use-room-realtime";
-import {
-  cardValues,
-  getActiveDealer,
-  getVoteProgress,
-} from "#/lib/planning-poker";
+import { useCurrentMember } from "#/hooks/use-current-member"
+import { useRoom } from "#/hooks/use-room-realtime"
+import { cardValues, getActiveDealer, getVoteProgress } from "#/lib/planning-poker"
 
-import { RoomCenter } from "./RoomCenter";
-import { RoomMemberList } from "./RoomMemberList";
+import { RoomCenter } from "./RoomCenter"
+import { RoomMemberList } from "./RoomMemberList"
 
 export const TableTop = ({
   resultInput,
@@ -22,24 +14,21 @@ export const TableTop = ({
   setIsResultInputFocused,
   commitResultInput,
 }: {
-  resultInput: string;
-  setResultInput: Dispatch<SetStateAction<string>>;
-  isResultInputFocused: boolean;
-  setIsResultInputFocused: Dispatch<SetStateAction<boolean>>;
-  commitResultInput: () => void;
+  resultInput: string
+  setResultInput: Dispatch<SetStateAction<string>>
+  isResultInputFocused: boolean
+  setIsResultInputFocused: Dispatch<SetStateAction<boolean>>
+  commitResultInput: () => void
 }) => {
-  const room = useRoom();
+  const room = useRoom()
 
-  const currentMember = useCurrentMember();
+  const currentMember = useCurrentMember()
 
-  const voteProgress = room
-    ? getVoteProgress(room)
-    : { readyCount: 0, participantCount: 0 };
-  const activeDealer = room ? getActiveDealer(room) : null;
-  const isCurrentDealer = activeDealer?.id === currentMember?.id;
-  const canUseDealerControls =
-    Boolean(currentMember) && (!activeDealer || isCurrentDealer);
-  const canEditResult = Boolean(room?.revealed) && canUseDealerControls;
+  const voteProgress = room ? getVoteProgress(room) : { readyCount: 0, participantCount: 0 }
+  const activeDealer = room ? getActiveDealer(room) : null
+  const isCurrentDealer = activeDealer?.id === currentMember?.id
+  const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
+  const canEditResult = Boolean(room?.revealed) && canUseDealerControls
 
   return (
     <>
@@ -47,9 +36,7 @@ export const TableTop = ({
 
       <div
         className={`bg-background absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border py-4 text-center shadow-sm sm:py-5 ${
-          room.revealed
-            ? "w-44 px-4 sm:w-52 sm:px-5"
-            : "w-44 px-5 sm:w-56 sm:px-6"
+          room.revealed ? "w-44 px-4 sm:w-52 sm:px-5" : "w-44 px-5 sm:w-56 sm:px-6"
         }`}
       >
         {room.revealed ? (
@@ -77,8 +64,8 @@ export const TableTop = ({
         <RoomCenter.RoundControls />
       </div>
     </>
-  );
-};
+  )
+}
 
 export const Table = ({ children }: PropsWithChildren) => {
   return (
@@ -89,5 +76,5 @@ export const Table = ({ children }: PropsWithChildren) => {
         </div>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
