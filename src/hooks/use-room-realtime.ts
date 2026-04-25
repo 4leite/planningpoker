@@ -204,6 +204,14 @@ export const useRoomData = () => {
   return { room }
 }
 
+export const useRoom = () => {
+  const { room } = useRoomData()
+  if (!room) {
+    throw new Error("no room in context")
+  }
+  return room
+}
+
 export const useRoomMeta = () => {
   const { data: meta = { isBootstrapping: true, hasReceivedSnapshot: false } } = useQuery<RoomMeta>(
     {

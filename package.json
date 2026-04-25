@@ -27,7 +27,7 @@
     "test:e2e:headed": "playwright test --project main --headed --grep-invert @manual",
     "test:e2e:smoke": "playwright test --project main --grep @smoke --grep-invert '@manual|@stress'",
     "test:e2e:stress": "playwright test --project main --grep @stress --grep-invert @manual",
-    "validate": "pnpm check && pnpm test:e2e",
+    "validate": "pnpm lint:check && pnpm tsc && pnpm test && pnpm test:e2e",
     "wrangler": "wrangler"
   },
   "dependencies": {
@@ -58,6 +58,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "lint-staged": "^16.4.0",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
     "simple-git-hooks": "^2.13.1",
@@ -67,7 +68,10 @@
     "wrangler": "^4.84.1"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm run format"
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*": "oxfmt --write --no-error-on-unmatched-pattern"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

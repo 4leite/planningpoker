@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useParams } from "@tanstack/react-router"
 
 import {
   castVoteState,
@@ -40,14 +39,7 @@ type RoomMutationName =
   | "setResult"
   | "passDealer"
 
-export const roomMutationKey = (roomId: string, mutationName: RoomMutationName) =>
-  ["room", roomId, "mutation", mutationName] as const
-
-const useRoomId = () => {
-  const { room } = useParams({ from: "/r/$room" })
-
-  return room
-}
+export const roomMutationKey = (mutationName: RoomMutationName) => ["room", mutationName] as const
 
 const useRoomMutation = <TVars>(
   mutationName: RoomMutationName,
@@ -57,11 +49,10 @@ const useRoomMutation = <TVars>(
 ) => {
   const queryClient = useQueryClient()
   const sendAction = useRoomAction()
-  const roomId = useRoomId()
   const memberId = useMemberId()
 
   return useMutation<RoomState | null, unknown, TVars, MutationContext>({
-    mutationKey: roomMutationKey(roomId, mutationName),
+    mutationKey: roomMutationKey(mutationName),
     onMutate: (variables) => {
       queryClient.setQueryData(roomFeedbackQueryKey(), null)
       const previousRoom = queryClient.getQueryData<RoomState | null>(roomQueryKey()) ?? null

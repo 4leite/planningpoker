@@ -1,9 +1,9 @@
-import { useIsMutating } from "@tanstack/react-query"
-import { Button } from "@tohuhono/ui/button"
-import { Input } from "@tohuhono/ui/input"
-import { useRef } from "react"
+import { useIsMutating } from "@tanstack/react-query";
+import { Button } from "@tohuhono/ui/button";
+import { Input } from "@tohuhono/ui/input";
+import { useRef } from "react";
 
-import { useCurrentMember } from "#/hooks/use-current-member"
+import { useCurrentMember } from "#/hooks/use-current-member";
 import {
   useClaimDealerMutation,
   usePassDealerMutation,
@@ -11,11 +11,11 @@ import {
   useRerollRoundMutation,
   useResetRoundMutation,
   useRevealVotesMutation,
-} from "#/hooks/use-room-mutations"
-import { useRoomData } from "#/hooks/use-room-realtime"
-import { getActiveDealer, type CardValue } from "#/lib/planning-poker"
+} from "#/hooks/use-room-mutations";
+import { useRoomData } from "#/hooks/use-room-realtime";
+import { getActiveDealer, type CardValue } from "#/lib/planning-poker";
 
-import { formatRoomError } from "./room-error"
+import { formatRoomError } from "./room-error";
 
 const EditableResultCenter = ({
   value,
@@ -24,13 +24,13 @@ const EditableResultCenter = ({
   onFocusChange,
   disabled,
 }: {
-  value: string
-  onChange: (value: string) => void
-  onCommit: () => void
-  onFocusChange: (focused: boolean) => void
-  disabled: boolean
+  value: string;
+  onChange: (value: string) => void;
+  onCommit: () => void;
+  onFocusChange: (focused: boolean) => void;
+  disabled: boolean;
 }) => {
-  const blurTimeoutRef = useRef<number | null>(null)
+  const blurTimeoutRef = useRef<number | null>(null);
 
   return (
     <div className="flex w-full justify-center">
@@ -41,21 +41,21 @@ const EditableResultCenter = ({
         onChange={(event) => onChange(event.target.value.trim())}
         onFocus={() => {
           if (blurTimeoutRef.current !== null) {
-            window.clearTimeout(blurTimeoutRef.current)
+            window.clearTimeout(blurTimeoutRef.current);
           }
-          onFocusChange(true)
+          onFocusChange(true);
         }}
         onBlur={() => {
-          onCommit()
+          onCommit();
           blurTimeoutRef.current = window.setTimeout(() => {
-            onFocusChange(false)
-            blurTimeoutRef.current = null
-          }, 0)
+            onFocusChange(false);
+            blurTimeoutRef.current = null;
+          }, 0);
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
-            event.preventDefault()
-            onCommit()
+            event.preventDefault();
+            onCommit();
           }
         }}
         size={2}
@@ -63,16 +63,18 @@ const EditableResultCenter = ({
         disabled={disabled}
       />
     </div>
-  )
-}
+  );
+};
 
 const RevealedResultCenter = ({ result }: { result: CardValue | null }) => (
-  <div className="text-foreground text-lg font-semibold sm:text-xl">{result ?? "-"}</div>
-)
+  <div className="text-foreground text-lg font-semibold sm:text-xl">
+    {result ?? "-"}
+  </div>
+);
 
 const VoteProgressCenter = ({ centerLabel }: { centerLabel: string }) => (
   <div className="text-muted-foreground text-sm">{centerLabel}</div>
-)
+);
 
 const RevealedRoundControls = ({
   handleReroll,
@@ -80,10 +82,10 @@ const RevealedRoundControls = ({
   isRoundResetPending,
   canReset,
 }: {
-  handleReroll: () => void
-  handleAccept: () => void
-  isRoundResetPending: boolean
-  canReset: boolean
+  handleReroll: () => void;
+  handleAccept: () => void;
+  isRoundResetPending: boolean;
+  canReset: boolean;
 }) => (
   <div className="grid w-full grid-cols-2 gap-2">
     <Button
@@ -104,16 +106,16 @@ const RevealedRoundControls = ({
       Accept
     </Button>
   </div>
-)
+);
 
 const HiddenRoundControls = ({
   handleReveal,
   isRevealPending,
   memberCount,
 }: {
-  handleReveal: () => void
-  isRevealPending: boolean
-  memberCount: number
+  handleReveal: () => void;
+  isRevealPending: boolean;
+  memberCount: number;
 }) => (
   <Button
     type="button"
@@ -123,14 +125,14 @@ const HiddenRoundControls = ({
   >
     Reveal
   </Button>
-)
+);
 
 const ClaimDealerButton = ({
   handleClaimDealer,
   isDealerControlsBusy,
 }: {
-  handleClaimDealer: () => void
-  isDealerControlsBusy: boolean
+  handleClaimDealer: () => void;
+  isDealerControlsBusy: boolean;
 }) => (
   <Button
     type="button"
@@ -141,14 +143,14 @@ const ClaimDealerButton = ({
   >
     Claim dealer
   </Button>
-)
+);
 
 const PassDealerButton = ({
   handlePassDealer,
   isDealerControlsBusy,
 }: {
-  handlePassDealer: () => void
-  isDealerControlsBusy: boolean
+  handlePassDealer: () => void;
+  isDealerControlsBusy: boolean;
 }) => (
   <Button
     type="button"
@@ -159,35 +161,41 @@ const PassDealerButton = ({
   >
     Pass dealer
   </Button>
-)
+);
 
 const RoundControls = () => {
-  const { room } = useRoomData()
-  const currentMember = useCurrentMember()
+  const { room } = useRoomData();
+  const currentMember = useCurrentMember();
 
   if (!room) {
-    return null
+    return null;
   }
 
-  const activeDealer = getActiveDealer(room)
-  const isCurrentDealer = activeDealer?.id === currentMember?.id
-  const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
-  const canReveal = canUseDealerControls && Boolean(currentMember)
-  const canReset = room.revealed || room.members.some((member) => member.vote !== null)
-  const mutationOptions = { formatRoomError }
-  const { mutate: mutateRevealVotes } = useRevealVotesMutation(mutationOptions)
-  const { mutate: mutateResetRound } = useResetRoundMutation(mutationOptions)
-  const { mutate: mutateRerollRound } = useRerollRoundMutation(mutationOptions)
+  const activeDealer = getActiveDealer(room);
+  const isCurrentDealer = activeDealer?.id === currentMember?.id;
+  const canUseDealerControls =
+    Boolean(currentMember) && (!activeDealer || isCurrentDealer);
+  const canReveal = canUseDealerControls && Boolean(currentMember);
+  const canReset =
+    room.revealed || room.members.some((member) => member.vote !== null);
+  const mutationOptions = { formatRoomError };
+  const { mutate: mutateRevealVotes } = useRevealVotesMutation(mutationOptions);
+  const { mutate: mutateResetRound } = useResetRoundMutation(mutationOptions);
+  const { mutate: mutateRerollRound } = useRerollRoundMutation(mutationOptions);
   const revealMutations = useIsMutating({
-    mutationKey: roomMutationKey(room.roomId, "reveal"),
-  })
-  const resetMutations = useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reset") })
-  const rerollMutations = useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reroll") })
-  const isRevealPending = revealMutations > 0
-  const isRoundResetPending = resetMutations > 0 || rerollMutations > 0
+    mutationKey: roomMutationKey("reveal"),
+  });
+  const resetMutations = useIsMutating({
+    mutationKey: roomMutationKey("reset"),
+  });
+  const rerollMutations = useIsMutating({
+    mutationKey: roomMutationKey("reroll"),
+  });
+  const isRevealPending = revealMutations > 0;
+  const isRoundResetPending = resetMutations > 0 || rerollMutations > 0;
 
   if (!canReveal) {
-    return null
+    return null;
   }
 
   return room.revealed ? (
@@ -203,41 +211,45 @@ const RoundControls = () => {
       isRevealPending={isRevealPending}
       memberCount={room.members.length}
     />
-  )
-}
+  );
+};
 
 const DealerControls = () => {
-  const { room } = useRoomData()
-  const currentMember = useCurrentMember()
+  const { room } = useRoomData();
+  const currentMember = useCurrentMember();
 
   if (!room) {
-    return null
+    return null;
   }
 
-  const activeDealer = getActiveDealer(room)
-  const isCurrentDealer = activeDealer?.id === currentMember?.id
-  const canClaimDealer = Boolean(currentMember) && activeDealer === null
-  const canPassDealer = Boolean(isCurrentDealer)
-  const mutationOptions = { formatRoomError }
-  const { mutate: mutateClaimDealer } = useClaimDealerMutation(mutationOptions)
-  const { mutate: mutatePassDealer } = usePassDealerMutation(mutationOptions)
+  const activeDealer = getActiveDealer(room);
+  const isCurrentDealer = activeDealer?.id === currentMember?.id;
+  const canClaimDealer = Boolean(currentMember) && activeDealer === null;
+  const canPassDealer = Boolean(isCurrentDealer);
+  const mutationOptions = { formatRoomError };
+  const { mutate: mutateClaimDealer } = useClaimDealerMutation(mutationOptions);
+  const { mutate: mutatePassDealer } = usePassDealerMutation(mutationOptions);
   const claimDealerMutations = useIsMutating({
-    mutationKey: roomMutationKey(room.roomId, "claimDealer"),
-  })
+    mutationKey: roomMutationKey("claimDealer"),
+  });
   const passDealerMutations = useIsMutating({
-    mutationKey: roomMutationKey(room.roomId, "passDealer"),
-  })
+    mutationKey: roomMutationKey("passDealer"),
+  });
   const revealMutations = useIsMutating({
-    mutationKey: roomMutationKey(room.roomId, "reveal"),
-  })
-  const resetMutations = useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reset") })
-  const rerollMutations = useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reroll") })
+    mutationKey: roomMutationKey("reveal"),
+  });
+  const resetMutations = useIsMutating({
+    mutationKey: roomMutationKey("reset"),
+  });
+  const rerollMutations = useIsMutating({
+    mutationKey: roomMutationKey("reroll"),
+  });
   const isDealerControlsBusy =
     claimDealerMutations > 0 ||
     passDealerMutations > 0 ||
     revealMutations > 0 ||
     resetMutations > 0 ||
-    rerollMutations > 0
+    rerollMutations > 0;
 
   if (canClaimDealer) {
     return (
@@ -245,7 +257,7 @@ const DealerControls = () => {
         handleClaimDealer={() => mutateClaimDealer(undefined)}
         isDealerControlsBusy={isDealerControlsBusy}
       />
-    )
+    );
   }
 
   if (canPassDealer) {
@@ -254,11 +266,11 @@ const DealerControls = () => {
         handlePassDealer={() => mutatePassDealer(undefined)}
         isDealerControlsBusy={isDealerControlsBusy}
       />
-    )
+    );
   }
 
-  return null
-}
+  return null;
+};
 
 export const RoomCenter = {
   EditableResult: EditableResultCenter,
@@ -270,4 +282,4 @@ export const RoomCenter = {
   PassDealer: PassDealerButton,
   RoundControls,
   DealerControls,
-}
+};

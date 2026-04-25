@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router";
 
-import { RoomScreen } from "#/components/planning-poker/RoomScreen"
+import { RoomScreen } from "#/components/planning-poker/room/RoomScreen";
 
-const roomShellCacheControl = "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800"
+const roomShellCacheControl =
+  "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800";
 
 export const Route = createFileRoute("/r/$room")({
   headers: () => ({
@@ -17,8 +18,8 @@ export const Route = createFileRoute("/r/$room")({
     ],
   }),
   component: RoomRoute,
-})
+});
 
 function RoomRoute() {
-  return <RoomScreen />
+  return <RoomScreen />;
 }
