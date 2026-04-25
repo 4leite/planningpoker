@@ -2,7 +2,7 @@ import { useIsMutating } from "@tanstack/react-query"
 import { Button } from "@tohuhono/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@tohuhono/ui/tooltip"
 
-import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
+import { useMemberId } from "#/hooks/use-planning-poker-identity"
 import {
   useClaimDealerMutation,
   usePassDealerMutation,
@@ -68,8 +68,8 @@ const PassDealerButton = ({
 
 export const DealerControls = () => {
   const { room } = useRoomData()
-  const { identity } = usePlanningPokerIdentity()
-  const currentMemberId = identity?.memberId ?? null
+
+  const currentMemberId = useMemberId()
   const roomId = room?.roomId ?? ""
   const mutationOptions = { formatRoomError }
   const { mutate: mutateClaimDealer } = useClaimDealerMutation(mutationOptions)

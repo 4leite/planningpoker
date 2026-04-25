@@ -12,7 +12,7 @@ type PlanningPokerIdentity = z.infer<typeof identitySchema>
 
 type PlanningPokerIdentityContextValue = {
   identity: PlanningPokerIdentity | null
-  rememberDisplayName: (displayName: string) => void
+  setDisplayName: (displayName: string) => void
 }
 
 const PlanningPokerIdentityContext = createContext<PlanningPokerIdentityContextValue | null>(null)
@@ -50,7 +50,7 @@ const usePlanningPokerIdentityState = (): PlanningPokerIdentityContextValue => {
     })
   }, [identity, setIdentity])
 
-  const rememberDisplayName = (displayName: string) => {
+  const setDisplayName = (displayName: string) => {
     setIdentity({
       memberId: identity?.memberId ?? crypto.randomUUID(),
       displayName,
@@ -59,7 +59,7 @@ const usePlanningPokerIdentityState = (): PlanningPokerIdentityContextValue => {
 
   return {
     identity,
-    rememberDisplayName,
+    setDisplayName,
   }
 }
 
@@ -73,7 +73,7 @@ export const PlanningPokerIdentityProvider = ({ children }: { children: React.Re
   )
 }
 
-export const usePlanningPokerIdentity = () => {
+const usePlanningPokerIdentity = () => {
   const value = useContext(PlanningPokerIdentityContext)
 
   if (!value) {
@@ -81,4 +81,26 @@ export const usePlanningPokerIdentity = () => {
   }
 
   return value
+}
+
+export const useSetDisplayName = () => {
+  return usePlanningPokerIdentity().setDisplayName
+}
+
+export const useDisplayName = () => {
+  return usePlanningPokerIdentity().identity?.displayName || ""
+}
+
+export const useMaybeMemberId = () => {
+  return usePlanningPokerIdentity().identity?.memberId || null
+}
+
+export const useMemberId = () => {
+  const memberId = useMaybeMemberId()
+
+  if (!memberId) {
+    throw new Error("no memberId found")
+  }
+
+  return memberId
 }

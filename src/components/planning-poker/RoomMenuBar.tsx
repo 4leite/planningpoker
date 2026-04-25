@@ -5,7 +5,7 @@ import { Switch } from "@tohuhono/ui/switch"
 import { createPortal } from "react-dom"
 
 import { useMenuState } from "#/components/layout/MenuContext"
-import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
+import { useMemberId } from "#/hooks/use-planning-poker-identity"
 import { useChangeRoleMutation, useLeaveRoomMutation } from "#/hooks/use-room-mutations"
 import { useRoomData } from "#/hooks/use-room-realtime"
 
@@ -13,9 +13,8 @@ import { formatRoomError } from "./room-error"
 
 export const RoomMenuBar = () => {
   const navigate = useNavigate()
-  const { identity } = usePlanningPokerIdentity()
   const { room } = useRoomData()
-  const identityMemberId = identity?.memberId ?? null
+  const currentMemberId = useMemberId()
   const { roomMenuPortalElement } = useMenuState()
   const { mutate: mutateChangeRole, isPending: isRoleChangePending } = useChangeRoleMutation({
     formatRoomError,
@@ -28,10 +27,10 @@ export const RoomMenuBar = () => {
     return null
   }
 
-  const currentMember = room.members.find((member) => member.id === identityMemberId) ?? null
+  const currentMember = room.members.find((member) => member.id === currentMemberId) ?? null
 
   const handleExit = () => {
-    if (!identity) {
+    if (!currentMemberId) {
       void navigate({ to: "/" })
       return
     }

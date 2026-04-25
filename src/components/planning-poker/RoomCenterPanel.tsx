@@ -2,7 +2,7 @@ import { useIsMutating } from "@tanstack/react-query"
 import { Card, CardContent } from "@tohuhono/ui/card"
 import { useEffect, useState } from "react"
 
-import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
+import { useMemberId } from "#/hooks/use-planning-poker-identity"
 import {
   useCastVoteMutation,
   roomMutationKey,
@@ -83,8 +83,8 @@ const useResultInput = ({
 
 export const RoomCenterPanel = () => {
   const { room } = useRoomData()
-  const { identity } = usePlanningPokerIdentity()
-  const identityMemberId = identity?.memberId ?? null
+
+  const currentMemberId = useMemberId()
   const { setFeedbackMessage } = useRoomFeedback()
   const mutationOptions = { formatRoomError }
 
@@ -101,12 +101,12 @@ export const RoomCenterPanel = () => {
   } = useResultInput({ room, mutateSetRoomResult, setFeedbackMessage })
 
   const roomId = room?.roomId ?? ""
-  const currentMember = room?.members.find((member) => member.id === identityMemberId) ?? null
+  const currentMember = room?.members.find((member) => member.id === currentMemberId) ?? null
 
   const voteProgress = room ? getVoteProgress(room) : { readyCount: 0, participantCount: 0 }
   const activeDealer = room ? getActiveDealer(room) : null
-  const isCurrentDealer = activeDealer?.id === currentMember?.id
-  const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
+  const isCurrentDealer = activeDealer?.id === currentMemberId
+  const canUseDealerControls = Boolean(currentMemberId) && (!activeDealer || isCurrentDealer)
   const canEditResult = Boolean(room?.revealed) && canUseDealerControls
   const resetMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reset") })
   const rerollMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reroll") })

@@ -16,7 +16,7 @@ import {
   type RoomState,
 } from "#/lib/planning-poker"
 
-import { usePlanningPokerIdentity } from "./use-planning-poker-identity"
+import { useMemberId } from "./use-planning-poker-identity"
 import { useRoomAction } from "./use-room-action"
 import { roomFeedbackQueryKey, roomQueryKey, type SendAction } from "./use-room-realtime"
 
@@ -49,20 +49,6 @@ const useRoomId = () => {
   return room
 }
 
-const useMemberId = () => {
-  const { identity } = usePlanningPokerIdentity()
-
-  return identity?.memberId ?? null
-}
-
-const requireMemberId = (memberId: string | null) => {
-  if (!memberId) {
-    throw new Error("room_member_missing")
-  }
-
-  return memberId
-}
-
 const useRoomMutation = <TVars>(
   mutationName: RoomMutationName,
   options: RoomMutationOptions,
@@ -85,10 +71,9 @@ const useRoomMutation = <TVars>(
       }
 
       try {
-        const nextMemberId = requireMemberId(memberId)
         queryClient.setQueryData(
           roomQueryKey(),
-          optimisticUpdate(previousRoom, variables, nextMemberId),
+          optimisticUpdate(previousRoom, variables, memberId),
         )
       } catch {
         // Let the server remain the source of truth for invalid optimistic transitions.
@@ -96,7 +81,7 @@ const useRoomMutation = <TVars>(
 
       return { previousRoom }
     },
-    mutationFn: (variables) => sendAction(createAction(variables, requireMemberId(memberId))),
+    mutationFn: (variables) => sendAction(createAction(variables, memberId)),
     onSuccess: (nextRoom) => {
       if (!nextRoom) {
         return
