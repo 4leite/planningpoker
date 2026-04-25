@@ -20,7 +20,5 @@ export const Route = createFileRoute("/r/$room")({
 })
 
 function RoomRoute() {
-  const { room } = Route.useParams()
-
-  return <RoomScreen initialRoom={null} roomId={room} />
+  return <RoomScreen />
 }

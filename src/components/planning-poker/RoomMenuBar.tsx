@@ -7,13 +7,14 @@ import { createPortal } from "react-dom"
 import { useMenuState } from "#/components/layout/MenuContext"
 import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
 import { useChangeRoleMutation, useLeaveRoomMutation } from "#/hooks/use-room-mutations"
-import { type RoomState } from "#/lib/planning-poker"
+import { useRoomData } from "#/hooks/use-room-realtime"
 
 import { formatRoomError } from "./room-error"
 
-export const RoomMenuBar = ({ room }: { room: RoomState }) => {
+export const RoomMenuBar = () => {
   const navigate = useNavigate()
   const { identity } = usePlanningPokerIdentity()
+  const { room } = useRoomData()
   const identityMemberId = identity?.memberId ?? null
   const { roomMenuPortalElement } = useMenuState()
   const { mutate: mutateChangeRole, isPending: isRoleChangePending } = useChangeRoleMutation({
@@ -22,6 +23,11 @@ export const RoomMenuBar = ({ room }: { room: RoomState }) => {
   const { mutate: mutateLeaveRoom } = useLeaveRoomMutation({
     formatRoomError,
   })
+
+  if (!room) {
+    return null
+  }
+
   const currentMember = room.members.find((member) => member.id === identityMemberId) ?? null
 
   const handleExit = () => {

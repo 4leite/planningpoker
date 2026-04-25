@@ -77,8 +77,8 @@ const useRoomMutation = <TVars>(
   return useMutation<RoomState | null, unknown, TVars, MutationContext>({
     mutationKey: roomMutationKey(roomId, mutationName),
     onMutate: (variables) => {
-      queryClient.setQueryData(roomFeedbackQueryKey(roomId), null)
-      const previousRoom = queryClient.getQueryData<RoomState | null>(roomQueryKey(roomId)) ?? null
+      queryClient.setQueryData(roomFeedbackQueryKey(), null)
+      const previousRoom = queryClient.getQueryData<RoomState | null>(roomQueryKey()) ?? null
 
       if (!previousRoom || !optimisticUpdate) {
         return { previousRoom }
@@ -87,7 +87,7 @@ const useRoomMutation = <TVars>(
       try {
         const nextMemberId = requireMemberId(memberId)
         queryClient.setQueryData(
-          roomQueryKey(roomId),
+          roomQueryKey(),
           optimisticUpdate(previousRoom, variables, nextMemberId),
         )
       } catch {
@@ -102,15 +102,15 @@ const useRoomMutation = <TVars>(
         return
       }
 
-      queryClient.setQueryData(roomFeedbackQueryKey(roomId), null)
-      queryClient.setQueryData(roomQueryKey(roomId), nextRoom)
+      queryClient.setQueryData(roomFeedbackQueryKey(), null)
+      queryClient.setQueryData(roomQueryKey(), nextRoom)
     },
     onError: (error, _variables, context) => {
       if (context?.previousRoom) {
-        queryClient.setQueryData(roomQueryKey(roomId), context.previousRoom)
+        queryClient.setQueryData(roomQueryKey(), context.previousRoom)
       }
 
-      queryClient.setQueryData(roomFeedbackQueryKey(roomId), options.formatRoomError(error))
+      queryClient.setQueryData(roomFeedbackQueryKey(), options.formatRoomError(error))
     },
   })
 }

@@ -1,25 +1,18 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useParams } from "@tanstack/react-router"
 import { buttonVariants } from "@tohuhono/ui/button"
 
 import { RoomRealtimeProvider } from "#/hooks/use-room-action"
 import { useRoomData, useRoomFeedback, useRoomMeta } from "#/hooks/use-room-realtime"
-import { type RoomState } from "#/lib/planning-poker"
 
 import { RoomCenterPanel } from "./RoomCenterPanel"
 import { RoomHistory } from "./RoomHistory"
 import { RoomJoinGate } from "./RoomJoinGate"
 import { RoomMenuBar } from "./RoomMenuBar"
 
-const RoomScreenBody = ({
-  initialRoom,
-  roomId,
-}: {
-  initialRoom: RoomState | null
-  roomId: string
-}) => {
-  const { room } = useRoomData({ initialRoom, roomId })
-  const { isBootstrapping } = useRoomMeta({ roomId })
-  const { feedbackMessage } = useRoomFeedback({ roomId })
+const RoomScreenBody = () => {
+  const { room } = useRoomData()
+  const { isBootstrapping } = useRoomMeta()
+  const { feedbackMessage } = useRoomFeedback()
 
   if (isBootstrapping) {
     return <div className="text-muted-foreground text-sm">loading room...</div>
@@ -38,29 +31,25 @@ const RoomScreenBody = ({
 
   return (
     <>
-      <RoomMenuBar room={room} />
+      <RoomMenuBar />
 
-      <RoomCenterPanel room={room} />
+      <RoomCenterPanel />
 
-      <RoomJoinGate room={room} roomId={roomId} />
+      <RoomJoinGate />
 
-      <RoomHistory history={room.history} />
+      <RoomHistory />
 
       {feedbackMessage ? <p className="text-destructive text-sm">{feedbackMessage}</p> : null}
     </>
   )
 }
 
-export const RoomScreen = ({
-  initialRoom,
-  roomId,
-}: {
-  initialRoom: RoomState | null
-  roomId: string
-}) => {
+export const RoomScreen = () => {
+  const { room: roomId } = useParams({ from: "/r/$room" })
+
   return (
     <RoomRealtimeProvider roomId={roomId}>
-      <RoomScreenBody roomId={roomId} initialRoom={initialRoom} />
+      <RoomScreenBody />
     </RoomRealtimeProvider>
   )
 }

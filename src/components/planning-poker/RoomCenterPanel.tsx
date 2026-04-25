@@ -8,7 +8,7 @@ import {
   roomMutationKey,
   useSetRoomResultMutation,
 } from "#/hooks/use-room-mutations"
-import { useRoomFeedback } from "#/hooks/use-room-realtime"
+import { useRoomData, useRoomFeedback } from "#/hooks/use-room-realtime"
 import {
   cardValues,
   getActiveDealer,
@@ -30,7 +30,7 @@ const useResultInput = ({
   mutateSetRoomResult,
   setFeedbackMessage,
 }: {
-  room: RoomState
+  room: RoomState | null
   mutateSetRoomResult: (value: CardValue) => void
   setFeedbackMessage: (msg: string) => void
 }) => {
@@ -38,11 +38,11 @@ const useResultInput = ({
   const [isResultInputFocused, setIsResultInputFocused] = useState(false)
 
   useEffect(() => {
-    setResultInput(room.result ?? "")
-  }, [room.result])
+    setResultInput(room?.result ?? "")
+  }, [room?.result])
 
   const commitResultInput = () => {
-    if (!room.revealed) return
+    if (!room?.revealed) return
 
     const nextResult = resultInput.trim()
 
@@ -63,7 +63,7 @@ const useResultInput = ({
   }
 
   const handleResultChange = (nextResult: CardValue) => {
-    if (!room.revealed || !isResultInputFocused || nextResult === room.result) {
+    if (!room?.revealed || !isResultInputFocused || nextResult === room.result) {
       return
     }
 
@@ -81,14 +81,14 @@ const useResultInput = ({
   }
 }
 
-export const RoomCenterPanel = ({ room }: { room: RoomState }) => {
+export const RoomCenterPanel = () => {
+  const { room } = useRoomData()
   const { identity } = usePlanningPokerIdentity()
   const identityMemberId = identity?.memberId ?? null
-  const { setFeedbackMessage } = useRoomFeedback({ roomId: room.roomId })
-  const currentMember = room.members.find((member) => member.id === identityMemberId) ?? null
+  const { setFeedbackMessage } = useRoomFeedback()
   const mutationOptions = { formatRoomError }
 
-  const { mutate: mutateCastVote } = useCastVoteMutation(mutationOptions)
+  const { mutate: mutateCastVote, isPending: isVotePending } = useCastVoteMutation(mutationOptions)
   const { mutate: mutateSetRoomResult, isPending: isResultPending } =
     useSetRoomResultMutation(mutationOptions)
   const {
@@ -100,14 +100,21 @@ export const RoomCenterPanel = ({ room }: { room: RoomState }) => {
     handleResultChange,
   } = useResultInput({ room, mutateSetRoomResult, setFeedbackMessage })
 
-  const voteProgress = getVoteProgress(room)
-  const activeDealer = getActiveDealer(room)
+  const roomId = room?.roomId ?? ""
+  const currentMember = room?.members.find((member) => member.id === identityMemberId) ?? null
+
+  const voteProgress = room ? getVoteProgress(room) : { readyCount: 0, participantCount: 0 }
+  const activeDealer = room ? getActiveDealer(room) : null
   const isCurrentDealer = activeDealer?.id === currentMember?.id
   const canUseDealerControls = Boolean(currentMember) && (!activeDealer || isCurrentDealer)
-  const canEditResult = room.revealed && canUseDealerControls
-  const isRoundResetPending =
-    useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reset") }) > 0 ||
-    useIsMutating({ mutationKey: roomMutationKey(room.roomId, "reroll") }) > 0
+  const canEditResult = Boolean(room?.revealed) && canUseDealerControls
+  const resetMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reset") })
+  const rerollMutations = useIsMutating({ mutationKey: roomMutationKey(roomId, "reroll") })
+  const isRoundResetPending = resetMutations > 0 || rerollMutations > 0
+
+  if (!room) {
+    return null
+  }
 
   return (
     <>
@@ -118,6 +125,7 @@ export const RoomCenterPanel = ({ room }: { room: RoomState }) => {
             ? !canEditResult || !isResultInputFocused || isResultPending || isRoundResetPending
             : currentMember?.role !== "participant"
         }
+        isPending={room.revealed ? isResultPending || isRoundResetPending : isVotePending}
         preventButtonFocus={room.revealed && canEditResult && isResultInputFocused}
         onVote={room.revealed ? handleResultChange : (vote) => mutateCastVote(vote)}
       />
@@ -125,16 +133,7 @@ export const RoomCenterPanel = ({ room }: { room: RoomState }) => {
       <Card className="w-full max-w-5xl">
         <CardContent className="p-4 sm:p-6">
           <div className="bg-muted/20 relative mx-auto aspect-square w-full max-w-4xl rounded-[999px] border sm:aspect-video">
-            <RoomMemberList
-              room={room}
-              currentMemberId={currentMember?.id ?? null}
-              dealerControls={
-                <RoomCenter.DealerControls
-                  room={room}
-                  currentMemberId={currentMember?.id ?? null}
-                />
-              }
-            />
+            <RoomMemberList room={room} currentMemberId={currentMember?.id ?? null} />
 
             <div
               className={`bg-background absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-[999px] border py-4 text-center shadow-sm sm:py-5 ${

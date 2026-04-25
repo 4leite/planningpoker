@@ -19,7 +19,7 @@ export const formatRoomError = (error: unknown) => {
     case "dealer_action_forbidden":
       return "Only the current dealer can do that. Ask them to pass dealing or clear it."
     case "dealer_already_claimed":
-      return "Dealer is already claimed. Ask them to pass dealer first."
+      return "Dealer is already claimed. Ask them to Pass first."
     default:
       return error.message || "Something slipped while updating the room. Try again."
   }

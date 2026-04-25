@@ -491,7 +491,7 @@ describe("planning poker domain rules", () => {
     })
   })
 
-  it("lets a member claim dealer and pass it back to the room", () => {
+  it("lets a member Deal and pass it back to the room", () => {
     const joinedRoom = joinRoomState({
       room: createRoomState({ roomId: "amber-anchor-12", now: 1000 }),
       memberId: "11111111-1111-4111-8111-111111111111",

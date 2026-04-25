@@ -8,6 +8,8 @@ import {
   type RoomState,
 } from "#/lib/planning-poker"
 
+import { DealerControls } from "./RoomDealerControls"
+
 const sortMembers = (members: RoomState["members"], currentMemberId: string | null) =>
   [...members].sort((left, right) => {
     if (left.id === currentMemberId) {
@@ -86,7 +88,7 @@ export const RoomMemberList = ({
                 <div
                   aria-label="Dealer"
                   title="Dealer"
-                  className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded-full border border-amber-300 bg-amber-100 text-[10px] font-semibold text-amber-900 shadow-sm"
+                  className="absolute right-1.5 bottom-1.5 flex size-5 items-center justify-center rounded-full border border-amber-300 bg-amber-100 text-[10px] font-semibold text-amber-900 shadow-sm"
                 >
                   D
                 </div>
@@ -110,7 +112,7 @@ export const RoomMemberList = ({
                       : ""}
               </div>
             </div>
-            {showDealerControls ? <div className="w-28 sm:w-32">{dealerControls}</div> : null}
+            {isCurrent ? <DealerControls /> : null}
           </article>
         )
       })}

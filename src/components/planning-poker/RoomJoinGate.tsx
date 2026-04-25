@@ -2,15 +2,15 @@ import { useEffect, useState } from "react"
 
 import { usePlanningPokerIdentity } from "#/hooks/use-planning-poker-identity"
 import { useJoinRoomMutation } from "#/hooks/use-room-mutations"
-import { useRoomFeedback } from "#/hooks/use-room-realtime"
-import { type RoomState } from "#/lib/planning-poker"
+import { useRoomData, useRoomFeedback } from "#/hooks/use-room-realtime"
 
 import { formatRoomError } from "./room-error"
 import { RoomJoinPanel } from "./RoomJoinPanel"
 
-export const RoomJoinGate = ({ room, roomId }: { room: RoomState; roomId: string }) => {
+export const RoomJoinGate = () => {
   const { identity, rememberDisplayName } = usePlanningPokerIdentity()
-  const { feedbackMessage, setFeedbackMessage, clearFeedbackMessage } = useRoomFeedback({ roomId })
+  const { room } = useRoomData()
+  const { feedbackMessage, setFeedbackMessage, clearFeedbackMessage } = useRoomFeedback()
   const [joinName, setJoinName] = useState(identity?.displayName ?? "")
   const { mutate: mutateJoinRoom, isPending: isJoinPending } = useJoinRoomMutation({
     formatRoomError,
@@ -21,6 +21,10 @@ export const RoomJoinGate = ({ room, roomId }: { room: RoomState; roomId: string
       setJoinName(identity.displayName)
     }
   }, [identity?.displayName, joinName])
+
+  if (!room) {
+    return null
+  }
 
   const currentMember = room.members.find((member) => member.id === identity?.memberId) ?? null
 
