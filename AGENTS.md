@@ -13,23 +13,17 @@
 
 <!-- intent-skills:start -->
 
-# Skill mappings - when working in these areas, load the linked skill file into context.
+## Skill Loading
 
-skills:
+Before substantial work:
 
-- task: "working on TanStack Start React app structure, route shells, loaders, or server/client
-  boundaries" load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md"
-- task: "configuring Vite, source inspection, or TanStack devtools integration" load:
-  "node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
-- task: "changing route generation, bundler routing config, or code splitting behavior" load:
-  "node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md"
-- task: "deploying this app to Vercel with Nitro, Cloudflare Workers, or changing SSR and prerender
-  behavior" load:
-  "node_modules/.pnpm/@tanstack+start-client-core@1.167.17/node_modules/@tanstack/start-client-core/skills/start-core/deployment/SKILL.md"
-- task: "adding server functions, API-style server routes, or secret/env-boundary code" To load this
-  skill, run: npx @tanstack/intent@latest list | grep -E
-  'execution-model|server-functions|server-routes'
-
+- Skill check: run `npx @tanstack/intent@latest list`, or use skills already listed in context.
+- Skill guidance: if one local skill clearly matches the task, run
+  `npx @tanstack/intent@latest load <package>#<skill>` and follow the returned `SKILL.md`.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer
+  the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are
+changing; load additional skills only when the task spans multiple packages or concerns.
 <!-- intent-skills:end -->
 
 ## Constraints
