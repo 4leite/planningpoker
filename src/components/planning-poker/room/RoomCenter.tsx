@@ -1,6 +1,7 @@
 import { useIsMutating } from "@tanstack/react-query"
 import { Button } from "@tohuhono/ui/button"
 import { Input } from "@tohuhono/ui/input"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@tohuhono/ui/tooltip"
 import { useRef } from "react"
 
 import { useCurrentMember } from "#/hooks/use-current-member"
@@ -125,40 +126,36 @@ const HiddenRoundControls = ({
   </Button>
 )
 
-const ClaimDealerButton = ({
-  handleClaimDealer,
-  isDealerControlsBusy,
+const DealerControlButton = ({
+  onClick,
+  disabled,
+  name,
+  tooltip,
 }: {
-  handleClaimDealer: () => void
-  isDealerControlsBusy: boolean
+  onClick: () => void
+  disabled: boolean
+  name: string
+  tooltip: string
 }) => (
-  <Button
-    type="button"
-    variant="outline"
-    onClick={handleClaimDealer}
-    disabled={isDealerControlsBusy}
-    className="h-8 w-full text-xs sm:h-9 sm:text-sm"
-  >
-    Claim dealer
-  </Button>
-)
-
-const PassDealerButton = ({
-  handlePassDealer,
-  isDealerControlsBusy,
-}: {
-  handlePassDealer: () => void
-  isDealerControlsBusy: boolean
-}) => (
-  <Button
-    type="button"
-    variant="outline"
-    onClick={handlePassDealer}
-    disabled={isDealerControlsBusy}
-    className="h-8 w-full text-xs sm:h-9 sm:text-sm"
-  >
-    Pass dealer
-  </Button>
+  <div className="relative w-full">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onClick}
+            disabled={disabled}
+            className="absolute w-full"
+          >
+            {name}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{tooltip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  </div>
 )
 
 const RoundControls = () => {
@@ -249,18 +246,22 @@ const DealerControls = () => {
 
   if (canClaimDealer) {
     return (
-      <ClaimDealerButton
-        handleClaimDealer={() => mutateClaimDealer(undefined)}
-        isDealerControlsBusy={isDealerControlsBusy}
+      <DealerControlButton
+        tooltip="Control table actions"
+        name="Deal"
+        onClick={() => mutateClaimDealer(undefined)}
+        disabled={isDealerControlsBusy}
       />
     )
   }
 
   if (canPassDealer) {
     return (
-      <PassDealerButton
-        handlePassDealer={() => mutatePassDealer(undefined)}
-        isDealerControlsBusy={isDealerControlsBusy}
+      <DealerControlButton
+        tooltip="Release table actions"
+        name="Pass"
+        onClick={() => mutatePassDealer(undefined)}
+        disabled={isDealerControlsBusy}
       />
     )
   }
@@ -274,8 +275,6 @@ export const RoomCenter = {
   VoteProgress: VoteProgressCenter,
   RevealedControls: RevealedRoundControls,
   HiddenControls: HiddenRoundControls,
-  ClaimDealer: ClaimDealerButton,
-  PassDealer: PassDealerButton,
   RoundControls,
   DealerControls,
 }

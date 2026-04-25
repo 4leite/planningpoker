@@ -92,7 +92,7 @@ export const RoomMemberList = () => {
                   D
                 </div>
               ) : null}
-              <div className="truncate pr-5 text-sm font-medium">{member.name}</div>
+              <div className="truncate text-sm font-medium">{member.name}</div>
               <div
                 className={cn(
                   "text-muted-foreground mt-2 min-h-6 text-sm",
