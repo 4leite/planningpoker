@@ -18,7 +18,11 @@ wrangler_output_file=".tmp/wrangler-output.json"
 
 WRANGLER_OUTPUT_FILE_PATH="$wrangler_output_file" pnpm wrangler deploy "$@"
 
-deployed_url="$(jq -r 'select(.type == "deploy") | .targets[-1]' "$wrangler_output_file" | tail -n 1)"
+deployed_url="$(jq -r 'select(.type == "deploy") | .targets[-1] | capture("^(?<url>\\S+)").url' "$wrangler_output_file" | tail -n 1)"
+
+if [[ "$deployed_url" != https://* ]]; then
+  deployed_url="https://$deployed_url"
+fi
 
 if [[ "$deployed_url" != https://* ]]; then
   deployed_url="https://$deployed_url"
