@@ -39,7 +39,7 @@ jobs:
       - name: Run Smoke (deployed)
         run: pnpm test:e2e:smoke
         env:
-          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+          PLAYWRIGHT_BASE_URL: https://${{ inputs.base_url }}
           CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
           CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
       - name: Upload Playwright smoke artifacts
