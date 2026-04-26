@@ -15,7 +15,7 @@ const extraHTTPHeaders =
 export default defineConfig({
   testDir: "./test/e2e",
   outputDir: "./test/results",
-  timeout: 30_000,
+  timeout: 10_000,
   retries: 1,
   reporter: [["list"], ["html", { open: "never", outputFolder: "test/playwright-report" }]],
   use: {
@@ -42,7 +42,6 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: false,
         timeout: 60_000,
-        stdout: "pipe",
         stderr: "pipe",
       },
 })

@@ -1,5 +1,6 @@
 import { Button } from "@tohuhono/ui/button"
 
+import { useRoomData } from "#/hooks/use-room-realtime"
 import { type RoomHistoryEntry } from "#/lib/planning-poker"
 
 const historyHeadings = ["Average", "Mode", "Result", "Votes"] as const
@@ -20,7 +21,10 @@ const getHistoryCsv = (history: RoomHistoryEntry[]) =>
     ),
   ].join("\n")
 
-export const RoomHistory = ({ history }: { history: RoomHistoryEntry[] }) => {
+export const RoomHistory = () => {
+  const { room } = useRoomData()
+  const history = room?.history ?? []
+
   if (history.length === 0) {
     return null
   }

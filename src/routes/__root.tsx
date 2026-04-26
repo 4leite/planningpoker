@@ -1,4 +1,5 @@
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
@@ -6,6 +7,7 @@ import { AntiFOUC } from "#/components/AntiFOUC"
 import { Menu } from "#/components/layout/Menu"
 import { MenuProvider } from "#/components/layout/MenuContext"
 import { AppQueryProvider } from "#/components/QueryProvider"
+import { PlanningPokerIdentityProvider } from "#/hooks/use-planning-poker-identity"
 
 import appCss from "../styles.css?url"
 
@@ -50,23 +52,30 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="bg-background text-foreground mx-auto flex min-h-svh max-w-4xl flex-col">
         <AppQueryProvider>
-          <MenuProvider>
-            <Menu />
-            <main className="flex h-full w-full flex-1 flex-col items-center justify-start gap-2 py-6">
-              {children}
-            </main>
-            <TanStackDevtools
-              config={{
-                position: "bottom-right",
-              }}
-              plugins={[
-                {
-                  name: "Tanstack Router",
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-              ]}
-            />
-          </MenuProvider>
+          <PlanningPokerIdentityProvider>
+            <MenuProvider>
+              <Menu />
+              <main className="flex h-full w-full flex-1 flex-col items-center justify-start gap-2 py-6">
+                {children}
+              </main>
+              <TanStackDevtools
+                config={{
+                  position: "bottom-right",
+                }}
+                plugins={[
+                  {
+                    name: "TanStack Query",
+                    render: <ReactQueryDevtoolsPanel />,
+                  },
+
+                  {
+                    name: "Tanstack Router",
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+            </MenuProvider>
+          </PlanningPokerIdentityProvider>
         </AppQueryProvider>
         <Scripts />
       </body>

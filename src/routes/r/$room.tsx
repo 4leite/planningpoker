@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { RoomScreen } from "#/components/planning-poker/RoomScreen"
+import { RoomScreen } from "#/components/planning-poker/room/RoomScreen"
 
 const roomShellCacheControl = "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800"
 
@@ -20,7 +20,5 @@ export const Route = createFileRoute("/r/$room")({
 })
 
 function RoomRoute() {
-  const { room } = Route.useParams()
-
-  return <RoomScreen initialRoom={null} roomId={room} />
+  return <RoomScreen />
 }

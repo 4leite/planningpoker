@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 
 import { type RoomState } from "#/lib/planning-poker"
@@ -7,13 +8,45 @@ import {
   type RoomSocketAction,
 } from "#/lib/room-sync"
 
-export const useRoomRealtime = ({
-  initialRoom,
-  roomId,
-}: {
-  initialRoom: RoomState | null
-  roomId: string
-}) => {
+export const roomQueryKey = () => ["room"] as const
+export const roomFeedbackQueryKey = () => ["room", "feedback"] as const
+export const roomMetaQueryKey = () => ["room", "meta"] as const
+
+type RoomMeta = {
+  isBootstrapping: boolean
+  hasReceivedSnapshot: boolean
+}
+
+export type SendAction = (action: Omit<RoomSocketAction, "mutationId">) => Promise<RoomState | null>
+
+export const useRoomFeedback = () => {
+  const queryClient = useQueryClient()
+  const { data: feedbackMessage = null } = useQuery<string | null>({
+    queryKey: roomFeedbackQueryKey(),
+    queryFn: () => null,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled: false,
+    initialData: null,
+  })
+
+  const setFeedbackMessage = (message: string | null) => {
+    queryClient.setQueryData(roomFeedbackQueryKey(), message)
+  }
+
+  const clearFeedbackMessage = () => {
+    setFeedbackMessage(null)
+  }
+
+  return {
+    feedbackMessage,
+    setFeedbackMessage,
+    clearFeedbackMessage,
+  }
+}
+
+export const useRoomRealtime = ({ roomId }: { roomId: string }) => {
+  const queryClient = useQueryClient()
   const socketRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<number | null>(null)
   const pendingActionsRef = useRef(
@@ -26,21 +59,19 @@ export const useRoomRealtime = ({
   const [connectionState, setConnectionState] = useState<
     "idle" | "connecting" | "live" | "reconnecting"
   >("connecting")
-  const [room, setRoomState] = useState<RoomState | null>(initialRoom)
-  const [isLoading, setIsLoading] = useState(true)
 
-  const setRoom = (nextRoom: RoomState | null) => {
-    setRoomState((currentRoom) =>
-      reconcileRoomSnapshot({
-        currentRoom,
-        nextRoom,
-      }),
-    )
+  const setRoomMeta = (nextMeta: RoomMeta) => {
+    queryClient.setQueryData(roomMetaQueryKey(), nextMeta)
   }
 
   useEffect(() => {
     let disposed = false
     let sawMissingRoom = false
+
+    setRoomMeta({
+      isBootstrapping: true,
+      hasReceivedSnapshot: false,
+    })
 
     const rejectPendingActions = (error: Error) => {
       for (const [mutationId, pendingAction] of pendingActionsRef.current) {
@@ -77,11 +108,16 @@ export const useRoomRealtime = ({
       socket.onmessage = (event) => {
         try {
           const message = roomSocketMessageSchema.parse(JSON.parse(event.data))
-          setIsLoading(false)
 
           if (message.type === "room.snapshot") {
+            setRoomMeta({
+              isBootstrapping: false,
+              hasReceivedSnapshot: true,
+            })
             sawMissingRoom = message.room === null
-            setRoom(message.room)
+            queryClient.setQueryData(roomQueryKey(), (currentRoom: RoomState | null | undefined) =>
+              reconcileRoomSnapshot({ currentRoom: currentRoom ?? null, nextRoom: message.room }),
+            )
             if (message.mutationId) {
               pendingActionsRef.current.get(message.mutationId)?.resolve(message.room)
               pendingActionsRef.current.delete(message.mutationId)
@@ -127,10 +163,14 @@ export const useRoomRealtime = ({
       socketRef.current?.close()
       socketRef.current = null
       setConnectionState("idle")
+      setRoomMeta({
+        isBootstrapping: true,
+        hasReceivedSnapshot: false,
+      })
     }
-  }, [roomId])
+  }, [roomId, queryClient])
 
-  const sendAction = (action: Omit<RoomSocketAction, "mutationId">) => {
+  const sendAction: SendAction = (action) => {
     const socket = socketRef.current
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error("room_socket_reconnecting"))
@@ -146,10 +186,43 @@ export const useRoomRealtime = ({
   }
 
   return {
-    room,
-    setRoom,
     sendAction,
     connectionState,
-    isLoading,
   }
+}
+
+export const useRoomData = () => {
+  const { data: room = null } = useQuery<RoomState | null>({
+    queryKey: roomQueryKey(),
+    queryFn: () => null,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled: false,
+    initialData: null,
+  })
+
+  return { room }
+}
+
+export const useRoom = () => {
+  const { room } = useRoomData()
+  if (!room) {
+    throw new Error("no room in context")
+  }
+  return room
+}
+
+export const useRoomMeta = () => {
+  const { data: meta = { isBootstrapping: true, hasReceivedSnapshot: false } } = useQuery<RoomMeta>(
+    {
+      queryKey: roomMetaQueryKey(),
+      queryFn: () => ({ isBootstrapping: true, hasReceivedSnapshot: false }),
+      staleTime: Infinity,
+      gcTime: Infinity,
+      enabled: false,
+      initialData: { isBootstrapping: true, hasReceivedSnapshot: false },
+    },
+  )
+
+  return meta
 }

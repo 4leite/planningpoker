@@ -6,11 +6,13 @@ import { cardValues, type CardValue } from "#/lib/planning-poker"
 export const VoteDeck = ({
   selectedVote,
   disabled,
+  isPending,
   onVote,
   preventButtonFocus = false,
 }: {
   selectedVote: CardValue | null
   disabled: boolean
+  isPending: boolean
   onVote: (vote: CardValue) => void
   preventButtonFocus?: boolean
 }) => (
@@ -21,8 +23,8 @@ export const VoteDeck = ({
         <Button
           key={cardValue}
           type="button"
-          disabled={disabled}
           aria-pressed={isSelected}
+          disabled={disabled || isPending}
           onMouseDown={(event) => {
             if (preventButtonFocus) {
               event.preventDefault()
