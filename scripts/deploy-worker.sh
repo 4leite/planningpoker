@@ -24,5 +24,9 @@ if [[ "$deployed_url" != https://* ]]; then
   deployed_url="https://$deployed_url"
 fi
 
+if [[ "$deployed_url" != https://* ]]; then
+  deployed_url="https://$deployed_url"
+fi
+
 echo "url=${deployed_url}" >> "$GITHUB_OUTPUT"
 echo "Deployed URL: ${deployed_url}" >> "$GITHUB_STEP_SUMMARY"
